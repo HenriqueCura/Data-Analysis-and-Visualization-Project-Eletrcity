@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 
 
-"""
+
 latitude =  39.41
 longitude = -8.07
 c = cdsapi.Client()
@@ -50,7 +50,7 @@ for y in years:
         )
         print(f"✔ Guardado: {target}")
 
-"""
+
 
 
 parts = sorted(Path("era5_cloud_parts").glob("*.nc"))

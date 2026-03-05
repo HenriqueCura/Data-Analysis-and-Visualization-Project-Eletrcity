@@ -4,134 +4,146 @@ import cdsapi
 import xarray as xr
 import pandas as pd
 import numpy as np
+from pathlib import Path
+from zipfile import ZipFile
+import xarray as xr
+from tempfile import TemporaryDirectory
+# ==========================================================
+# 1) CONFIGURAÇÃO DO DOWNLOAD
+# ==========================================================
 
-
-years  = ['2023','2024','2025','2026']
-months = [f"{m:02d}" for m in range(1,13)]
-days   = [f"{d:02d}" for d in range(1,32)]
+years  = ['2023', '2024', '2025', '2026']
+months = [f"{m:02d}" for m in range(1, 13)]
+days   = [f"{d:02d}" for d in range(1, 32)]
 hours  = [f"{h:02d}:00" for h in range(24)]
 
+# Área grande o suficiente (apenas 17x5 gridpoints)
 area = [41.25, -8.5, 37.25, -7.5]
 
 outdir = Path("era5_multi_parts")
-outdir.mkdir(parents=True, exist_ok=True)
+outdir.mkdir(exist_ok=True)
 
 c = cdsapi.Client()
 
+# ==========================================================
+# 2) DOWNLOAD GRIBs
+# ==========================================================
+
 for y in years:
     for m in months:
-        target = outdir / f"era5_multi_{y}_{m}.nc"
+
+        # evitar pedir meses futuros
+        if y == '2026' and m == '03':
+            break
+
+        target = outdir / f"era5_multi_{y}_{m}.grib"
         if target.exists():
+            print(f"↺ Já existe: {target.name}")
             continue
-        if m=='03' and y== '2026':
-            break 
+
+        print(f"⏬ Pedido: {y}-{m}")
+
         c.retrieve(
-            'reanalysis-era5-single-levels',
+            "reanalysis-era5-single-levels",
             {
-                'product_type': 'reanalysis',
-                'variable': [
-                    '2m_temperature',
-                    '10m_u_component_of_wind',
-                    '10m_v_component_of_wind',
-                    'total_precipitation'
+                "product_type": "reanalysis",
+                "variable": [
+                    "2m_temperature",
+                    "10m_u_component_of_wind",
+                    "10m_v_component_of_wind",
+                    "total_precipitation"
                 ],
-                'year': y,
-                'month': m,
-                'day': days,
-                'time': hours,
-                'area': area,
-                'data_format': 'netcdf',
+                "year": y,
+                "month": m,
+                "day": days,
+                "time": hours,
+                "area": area,
+                "format": "grib",
                 "download_format": "unarchived"
             },
             str(target)
         )
-######
 
-parts = sorted(Path("era5_cloud_parts").glob("*.nc"))
-print(f"Ficheiros encontrados: {len(parts)}")
+        print(f"✔ Guardado: {target.name}")
 
-ds = xr.open_mfdataset(
-    [str(p) for p in parts],
-    combine="by_coords",
-    engine="h5netcdf",
-    parallel=False
-)
+# ==========================================================
+# 3) PROCESSAMENTO → CSV diário e mensal
+# ==========================================================
 
-# -----------------------------------------------------------
-# 2) Extrair variáveis (ignorando total_cloud_cover)
-# -----------------------------------------------------------
+def open_group(grib_file, stepType):
+    """Abre GRIB filtrando o grupo certo."""
+    return xr.open_dataset(
+        grib_file,
+        engine="cfgrib",
+        backend_kwargs={"filter_by_keys": {"stepType": stepType}}
+    )
 
-# nomes típicos nos ficheiros ERA5
-var_temp = "t2m"   # temperatura 2m (K)
-var_u10  = "u10"   # vento U (m/s)
-var_v10  = "v10"   # vento V (m/s)
-var_tp   = "tp"    # precipitação total (m acumulados por hora)
+def spatial_mean(da, time_dim):
+    dims = [d for d in da.dims if d != time_dim]
+    return da.mean(dim=dims)
 
-# dimensão temporal no teu dataset
-time_dim = "valid_time"
+monthly_frames = []
 
-# -----------------------------------------------------------
-# 3) Fazer média espacial da área
-# -----------------------------------------------------------
-def spatial_mean(var):
-    dims = [d for d in var.dims if d != time_dim]
-    return var.mean(dim=dims)
+for grib in sorted(outdir.glob("*.grib")):
+    print(f"\n📄 A processar: {grib.name}")
 
-t2m = spatial_mean(ds[var_temp])
-u10 = spatial_mean(ds[var_u10])
-v10 = spatial_mean(ds[var_v10])
-tp  = spatial_mean(ds[var_tp])
+    # instant (t2m, u10, v10)
+    ds_inst = open_group(grib, "instant")
 
-# -----------------------------------------------------------
-# 4) Construir DataFrame horário
-# -----------------------------------------------------------
-df_hourly = pd.DataFrame(index=pd.to_datetime(ds[time_dim].values, utc=True))
-df_hourly["temp_K"] = t2m.values
-df_hourly["temp_C"] = df_hourly["temp_K"] - 273.15
+    # accum (tp)
+    ds_acc  = open_group(grib, "accum")
 
-df_hourly["u10"] = u10.values
-df_hourly["v10"] = v10.values
-df_hourly["wind_speed"] = np.sqrt(df_hourly["u10"]**2 + df_hourly["v10"]**2)
+    # merge seguro
+    ds = xr.merge([ds_inst, ds_acc], compat="override", join="outer")
 
-df_hourly["precip_mm"] = tp.values * 1000  # ERA5 tp é em metros
+    time_dim = "time"
 
-df_hourly.to_csv("era5_hourly_weather.csv")
-print("✔ CSV horário: era5_hourly_weather.csv")
+    # média espacial da área
+    t2m = spatial_mean(ds["t2m"], time_dim).load()
+    u10 = spatial_mean(ds["u10"], time_dim).load()
+    v10 = spatial_mean(ds["v10"], time_dim).load()
+    tp  = spatial_mean(ds["tp"],  time_dim).load()
 
-# -----------------------------------------------------------
-# 5) Criar CSV diário (mean/min/max)
-# -----------------------------------------------------------
+    times = pd.to_datetime(ds[time_dim].values, utc=True)
 
-df_daily = df_hourly.resample("1D").agg({
+    # construir dataframe horário (interno)
+    df = pd.DataFrame(index=times)
+    df["temp_C"] = t2m.values - 273.15
+    df["wind_speed"] = np.sqrt(u10.values**2 + v10.values**2)
+    df["precip_mm"] = tp.values * 1000.0   # m → mm
+
+    monthly_frames.append(df)
+
+# série completa
+df_all = pd.concat(monthly_frames).sort_index()
+
+# ==========================================================
+# 4) CSV DIÁRIO (mean/min/max + precip sum)
+# ==========================================================
+
+df_daily = df_all.resample("1D").agg({
     "temp_C": ["mean", "min", "max"],
     "wind_speed": ["mean", "min", "max"],
-    "precip_mm": ["sum"]   # precipitação diária é soma, não média!
+    "precip_mm": ["sum"]
 })
-
-# simplificar nomes das colunas
 df_daily.columns = ["_".join(col) for col in df_daily.columns]
 df_daily.to_csv("era5_daily_weather_stats.csv")
+print("✔ era5_daily_weather_stats.csv criado!")
 
-print("✔ CSV diário: era5_daily_weather_stats.csv")
+# ==========================================================
+# 5) CSV MENSAL (mean + precip sum)
+# ==========================================================
 
-# -----------------------------------------------------------
-# 6) Criar CSV mensal (médias)
-# -----------------------------------------------------------
-
-df_monthly = df_hourly.resample("1MS").agg({
-    "temp_C": ["mean", "min", "max"],
-    "wind_speed": ["mean", "min", "max"],
-    "precip_mm": ["mean","sum"]
+df_monthly = df_all.resample("1MS").agg({
+    "temp_C": "mean",
+    "wind_speed": "mean",
+    "precip_mm": "sum"
 })
-
 df_monthly.to_csv("era5_monthly_weather.csv")
-print("✔ CSV mensal: era5_monthly_weather.csv")
+print("✔ era5_monthly_weather.csv criado!")
 
-print("\n🎉 Tudo exportado com sucesso!")
+print("\n🎉 Tudo concluído: CSV diário e mensal gerados com sucesso!")
 """
-
-
-
 import xarray as xr
 import pandas as pd
 import numpy as np
@@ -317,4 +329,84 @@ print(f"✔ Guardado: {OUT_MONTHLY}")
 
 print("\n🎉 CSVs gerados com sucesso (hourly, daily stats, monthly).")
 
+
+BASE = Path("era5_multi_parts")      # <-- muda aqui se necessário
+files = sorted(BASE.glob("*.nc"))
+
+print(f"\nEncontrados {len(files)} ficheiros.\n")
+
+def detect_engine(nc_path: Path):
+    #Descobre o engine correto para abrir o NetCDF.
+    with open(nc_path, "rb") as f:
+        magic = f.read(4)
+    if magic.startswith(b"\x89HD"):  # HDF5 / NetCDF4
+        return "h5netcdf"
+    if magic.startswith(b"CDF"):
+        return "netcdf4"
+    return None  # Não é NetCDF válido
+
+for f in files:
+    print("="*80)
+    print(f"📄 Ficheiro: {f.name}")
+
+    # 1) Ver assinatura (ZIP ou NetCDF)
+    with open(f, "rb") as fp:
+        magic = fp.read(4)
+
+    print("Magic bytes:", magic)
+
+    # 2) Se for ZIP → listar conteúdo
+    if magic.startswith(b"PK"):
+        print("➡ Este ficheiro é um ZIP (mesmo tendo extensão .nc).")
+        with ZipFile(f, "r") as z:
+            names = z.namelist()
+            print("Conteúdo do ZIP:")
+            for name in names:
+                print("  -", name)
+
+        # 3) Abrir cada .nc dentro do ZIP sem deixar locks
+        print("\n🔍 A inspecionar o conteúdo interno dos .nc ...\n")
+        with TemporaryDirectory() as tmp:
+            tmpdir = Path(tmp)
+            with ZipFile(f, "r") as z:
+                for name in z.namelist():
+                    if name.endswith(".nc"):
+                        z.extract(name, tmpdir)
+                        nc_path = tmpdir / name
+
+                        # escolher engine com base na assinatura interna
+                        engine = detect_engine(nc_path)
+                        if engine is None:
+                            print(f"  ⚠ {name}: NÃO é NetCDF válido.")
+                            continue
+
+                        try:
+                            ds = xr.open_dataset(nc_path, engine=engine)
+                        except Exception as e:
+                            print(f"  ⚠ Erro ao abrir {name}: {e}")
+                            continue
+
+                        print(f"  ✔ {name}:")
+                        print("     Variáveis:", list(ds.data_vars))
+                        print("     Coords    :", list(ds.coords))
+                        ds.close()
+
+    # 4) Caso seja NetCDF direto
+    elif magic.startswith(b"\x89HD") or magic.startswith(b"CDF"):
+        print("➡ Este ficheiro é NetCDF.")
+        engine = detect_engine(f)
+        try:
+            ds = xr.open_dataset(f, engine=engine)
+            print("Variáveis:", list(ds.data_vars))
+            print("Coords   :", list(ds.coords))
+            ds.close()
+        except Exception as e:
+            print("⚠ Erro ao abrir NetCDF:", e)
+
+    else:
+        print("⚠ Este ficheiro NÃO é NetCDF nem ZIP — parece corrompido.")
+
+print("\n✓ Inspeção completa.")
 """
+
+
