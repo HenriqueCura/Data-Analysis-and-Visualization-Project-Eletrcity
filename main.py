@@ -26,8 +26,19 @@ def obtem_texto(pdf):
         text = pdf.pages[pag_n].extract_text()
         clean_text = text.strip().replace('/n',' ')
         texto_inteiro.append(clean_text)
-    texto_inteiro = " ".join(texto_inteiro)
-    return texto_inteiro
+    full_content = " ".join(texto_inteiro)
+
+    # ESTRATÉGIA: Cortar as referências
+    # Tenta encontrar o índice da última ocorrência de "References"
+    marcador_fim = full_content.rfind("References")
+    if marcador_fim == -1:
+        marcador_fim = full_content.rfind("REFERENCES")
+    
+    if marcador_fim != -1:
+        # Mantém apenas o texto antes das referências
+        full_content = full_content[:marcador_fim]
+
+    return full_content
 
 def main():
     path = sys.argv[1]

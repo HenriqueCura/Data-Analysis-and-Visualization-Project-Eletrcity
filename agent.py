@@ -17,7 +17,7 @@ def run_agent(user_text: str):
 
     Rules:
     - The summary must be written in English.
-    - Minimum 75 words.
+    - Minimum 100 words.
     - Maximum 300 words.
     - Do not add explanations.
     - Only return the summary.
