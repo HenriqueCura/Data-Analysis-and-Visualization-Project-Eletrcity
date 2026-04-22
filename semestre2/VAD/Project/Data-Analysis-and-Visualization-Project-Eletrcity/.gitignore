@@ -1,0 +1,11 @@
+.env
+.pycache
+.venv
+.pyc
+./venv
+__pycache__
+*.pyc
+.venv/
+env/
+venv/
+*.html

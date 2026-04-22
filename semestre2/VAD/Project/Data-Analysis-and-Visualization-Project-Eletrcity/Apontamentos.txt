@@ -1,0 +1,27 @@
+modelo de um calendário com os dias às escuras onde seria possível selecionar o mês
+
+estudar sazonalidade da produção de diferente tipo de energias; evolução ao longo dos anos dos dados
+
+ver alturas maior produção natural e onde há risco de não se produzir suficiente.
+comparar com o consumo se possível
+ver equilíbrios ver meteorologia e comparar
+ver meses com mais/menos injeções
+ver horas com mais/menos injeções ( ou dias dar opção utilizador escolher)
+ver evolução ao longo dos anos
+ver previsões de interrupção de luz, ter em atenção interrupções programadas
+ver produção fotovoltaica/consumo com o número de horas de luz diárias ( ponto médio nacional ou média do ponto mais a norte vs ponto mais a sul)
+### ver preço da luz timeseries ( nacional e estrangeiro)
+
+o que é q quero saber? qual a questão analítica
+disclaimer - por causa do centro geodésico
+
+VER QUESTÕES ANALITICAS; DERIVAR REQUISITOS
+
+- qual a sazonalidade da produção de diferente tipo de energias?
+- qual o impacto do número de luz solar diária no consumo de energia e na produção fotovoltaica?
+- qual o impacto das condições meteorológicas no preço da energia?
+- qual o impacto da produção de diferentes energias no preço da eletricidade?
+- qual a evolução da produção de energia e dos diferentes tipos ao longo dos últimos 3 anos em território nacional?
+
+
+
