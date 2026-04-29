@@ -10,3 +10,5 @@ jupyter
 vegafusion>=2.0.3
 pyarrow>=13.0.0
 vl-convert-python>=1.9.0
+dash-vega-components
+dash-bootstrap-components

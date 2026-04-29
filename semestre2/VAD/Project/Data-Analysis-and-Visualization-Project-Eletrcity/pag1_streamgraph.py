@@ -45,5 +45,54 @@ def altair_areaII():
     alt.Color('series:N').scale(scheme='category20b')
     ).interactive()
 
+
+def altair_areaIII():
+    df_hora['Outras Tecnologias (kWh)'] = df_hora['Rede Distribuição (kWh)'] - (df_hora['Eólica (kWh)'] + df_hora['Fotovoltaica (kWh)'] + df_hora['Hídrica (kWh)'] )
+    tecnologias = ['Eólica (kWh)', 'Fotovoltaica (kWh)', 'Hídrica (kWh)', 'Outras Tecnologias (kWh)']
+
+    # 2. "Derreter" o DataFrame
+    df_long = df_hora.melt(
+        id_vars=['Data/Hora'], 
+        value_vars=tecnologias,
+        var_name='Tecnologia', 
+        value_name='kWh'
+    )
+
+    # 3. Criar o gráfico
+    chart = alt.Chart(df_long).mark_area().encode(
+        x = alt.X('yearmonth(Data/Hora):T').axis(format='%b %Y', titleFontSize=16,   # Tamanho do título "Período Horário"
+                labelFontSize=12,   # Tamanho de "00:00", "01:00", etc.
+                labelAngle=-45,title='Mês/Ano'),
+        y = alt.Y('sum(kWh):Q',
+            title='Produção Total (kWh)', # O título vai aqui como argumento do Y
+            axis=alt.Axis(
+                titleFontSize=16,   # Tamanho do título do eixo
+                labelFontSize=12,   # Tamanho dos valores (1G, 2G...)
+                format='.2s'  )),      # Formatação simplificada
+      
+        
+        # Adicionamos o 'sort' aqui para ordenar pela soma de kWh
+
+        color = alt.Color('Tecnologia:N', legend=alt.Legend(titleFontSize=18, labelFontSize=16)).scale(scheme='inferno').sort(
+            alt.EncodingSortField(field='kWh', op='sum', order='descending')
+        ),
+        
+        order = alt.Order('sum(kWh):Q', sort='descending'),
+        
+        tooltip=['yearmonth(Data/Hora)', 'Tecnologia', 'sum(kWh)']
+    ).properties(
+        title={
+            "text": "Evolução Mensal da Produção de Energia em Portugal", # Título principal
+            #"subtitle": "Distribuição horária por tecnologia", # Subtítulo opcional
+            "fontSize": 30,
+            "anchor": "middle", # Alinha o título à esquerda
+            "color": "black"
+        },
+        width='container',
+        height=500,
+    ).interactive()
+    return chart
+
+
 chart = altair_area()
 chart.save('altairI.html')
