@@ -179,7 +179,173 @@ fig_cloud.add_trace(go.Scatter(
 fig_cloud = beautify_figure(fig_cloud, "Cobertura de nuvens ao longo do tempo", "%")
 fig_cloud.show()
 
+# %% 
+# 2 Parte
+df_hora = pd.read_csv("data/dados_hora.csv")
+df_diarios = pd.read_csv("data/dados_diarios.csv")
 
+df_hora["Data"] = pd.to_datetime(df_hora["Data"])
+df_diarios["Data"] = pd.to_datetime(df_diarios["Data"])
 
-## filll     
+# Produção diária: soma da Rede Distribuição por dia
+prod_diaria = (
+    df_hora
+    .groupby("Data", as_index=False)["Rede Distribuição (kWh)"]
+    .sum()
+)
+
+df = pd.merge(prod_diaria, df_diarios, on="Data", how="inner")
+
+meteo_cols = {
+    "Temperatura média": "temp_C_mean",
+    "Velocidade do vento": "wind_speed_mean",
+    "Precipitação": "precip_mm_sum",
+    "Nebulosidade média": "mean_cloud",
+    "Luz solar": "Sunlight (em minutos)"
+}
+
+fig = go.Figure()
+
+# Linha fixa: produção
+fig.add_trace(go.Scatter(
+    x=df["Data"],
+    y=df["Rede Distribuição (kWh)"],
+    name="Produção Total - Rede Distribuição",
+    mode="lines",
+    yaxis="y1"
+))
+
+# Linhas meteorológicas, só uma visível de cada vez
+for i, (label, col) in enumerate(meteo_cols.items()):
+    fig.add_trace(go.Scatter(
+        x=df["Data"],
+        y=df[col],
+        name=label,
+        mode="lines",
+        yaxis="y2",
+        visible=(i == 0)
+    ))
+
+buttons = []
+
+for i, (label, col) in enumerate(meteo_cols.items()):
+    visible = [True] + [False] * len(meteo_cols)
+    visible[i + 1] = True
+
+    buttons.append(dict(
+        label=label,
+        method="update",
+        args=[
+            {"visible": visible},
+            {
+                "title": f"Produção Total vs {label}",
+                "yaxis2.title": label
+            }
+        ]
+    ))
+
+fig.update_layout(
+    title="Produção Total vs Condições Meteorológicas",
+    xaxis_title="Data",
+
+    yaxis=dict(
+        title="Produção Total - Rede Distribuição (kWh)",
+        side="left"
+    ),
+
+    yaxis2=dict(
+        title="Temperatura média",
+        side="right",
+        overlaying="y"
+    ),
+
+    updatemenus=[
+        dict(
+            buttons=buttons,
+            direction="down",
+            x=1.05,
+            y=1.15,
+            showactive=True
+        )
+    ],
+
+    legend=dict(
+        orientation="h",
+        y=-0.25
+    )
+)
+
+fig.show()
 # %%
+# HEATMAP - Juntar meteorologia diária + produção diária 
+df_corr = pd.merge(df_diarios, prod_diaria, on="Data", how="inner")
+
+cols_escolhidas = [
+    "temp_C_mean",
+    "wind_speed_mean",
+    "precip_mm_sum",
+    "mean_cloud",
+    "Sunlight (em minutos)",
+    "Rede Distribuição (kWh)",
+    "Solar (kWh)",
+    "Eólica (kWh)",
+    "Hídrica (kWh)",
+    "Biomassa (kWh)"
+]
+
+cols_escolhidas = [col for col in cols_escolhidas if col in df_corr.columns]
+
+df_corr = df_corr[cols_escolhidas]
+corr_matrix = df_corr.corr()
+
+df_hora = pd.read_csv("data/dados_hora.csv")
+df_diarios = pd.read_csv("data/dados_diarios.csv")
+
+df_hora["Data"] = pd.to_datetime(df_hora["Data"])
+df_diarios["Data"] = pd.to_datetime(df_diarios["Data"])
+
+# Agregar produções horárias para valores diários
+prod_diaria = (
+    df_hora
+    .groupby("Data", as_index=False)
+    .sum(numeric_only=True)
+)
+
+# Remover colunas que não queres na correlação
+cols_remover = [
+    "Data",
+    "Preço",
+    "Preco",
+    "price",
+    "Preço Eletricidade",
+    "Preço da Eletricidade"
+]
+
+df_corr = df_corr.drop(
+    columns=[col for col in cols_remover if col in df_corr.columns],
+    errors="ignore"
+)
+
+# Manter só colunas numéricas
+df_corr = df_corr.select_dtypes(include="number")
+
+# Matriz de correlação
+corr_matrix = df_corr.corr()
+
+fig = px.imshow(
+    corr_matrix,
+    text_auto=".2f",
+    color_continuous_scale="RdBu_r",
+    zmin=-1,
+    zmax=1,
+    title="Matriz de Correlação entre Meteorologia e Produção Energética"
+)
+
+fig.update_layout(
+    width=1000,
+    height=850,
+    xaxis_title="Variáveis",
+    yaxis_title="Variáveis"
+)
+
+fig.show()
