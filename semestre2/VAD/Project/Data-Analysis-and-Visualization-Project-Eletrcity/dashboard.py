@@ -1,11 +1,12 @@
 from dash import Dash, dcc, html
 from dash.dependencies import Input, Output
-from pag1_streamgraph import altair_area, px_area
+import dash_vega_components as dvc
+from pag1_streamgraph import altair_areaIII
 
 app = Dash(__name__)
 
 
-fig = altair_area()
+fig = altair_areaIII()
 app.layout = html.Div([
     dcc.Graph(figure=fig)
 ])
