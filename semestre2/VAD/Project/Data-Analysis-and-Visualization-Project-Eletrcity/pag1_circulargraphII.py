@@ -20,10 +20,13 @@ anos_legend= list(dfII.apply(
 def create_circular_histogram(tec:str):
     if 'Fotovoltaica' in tec:
         cor = px.colors.sequential.Cividis_r
+        st = 'black'
     elif 'Hídrica' in tec:
         cor = px.colors.sequential.GnBu_r
+        st = 'white'
     else: 
         cor = px.colors.sequential.Teal_r
+        st = 'white'
     r = tec
     if r not in dfII.columns:
         raise ValueError(f"Tecnologia '{r}' não encontrada. Opções: {dfII.columns[2:-1].tolist()}")
@@ -64,8 +67,12 @@ def create_circular_histogram(tec:str):
                 showticklabels=True, 
                 range=[0, dfII[r].max()*1.02],
                 nticks=5, 
-                tickfont=dict(size=18, family='Arial'),
-                linecolor='black', 
+                tickfont=dict(
+                    size=15, 
+                    family='Arial Black', # 'Arial Black' é naturalmente mais grossa e escura
+                    color='black'         # Garante que não é o cinzento padrão
+                ),
+                linecolor='black',
                 linewidth=1,
                 layer='above traces', # Mudei para 'below' para as barras não taparem os números
                 gridcolor='lightgrey'
