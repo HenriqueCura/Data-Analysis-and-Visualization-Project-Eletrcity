@@ -7,6 +7,7 @@ from pag1_circulargraphII import create_circular_histogram
 from pag1_spiralgraphI import create_spiral_histogram
 from pag1_areagraph_month_year import area_month_year_interval
 from pag2_meteo_timeseries import create_weather_timeseries
+from pag3_priceseries import create_price_timeseries
 import altair as alt
 import dash_bootstrap_components as dbc
 import dash_loading_spinners as dls; from helpers import get_new_graph
@@ -21,6 +22,7 @@ app = dash.Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP],suppress_ca
 ### Carregar gráficos que não precisam de variáveis para serem inicializados
 streamgraph = altair_areaIII()
 circularI = circular_total()
+precos = create_price_timeseries()
 
 
 app.layout = html.Div([
@@ -84,7 +86,7 @@ def render_content(tab):
         ], width=6), # Ocupa metade do ecrã
 
         dbc.Col([
-            html.H4("Detalhe por Tecnologia", style={'textAlign': 'center'}),
+            html.H4("Evolução temporal por Tecnologia", style={'textAlign': 'left'}),
             
             # Dropdown para selecionar a tecnologia do gráfico da direita
             html.Div([
@@ -105,8 +107,9 @@ def render_content(tab):
             ], style={'marginBottom': '25px'}), # espaço para baixo do dropdown
 
             # Espaço para o gráfico detalhado
-            dcc.Graph(id='grafico_tec')
-        ], width=6)
+            dcc.Graph(id='grafico_tec'),
+            
+        ])
     ])
 ], fluid=True),
 dbc.Container([
@@ -241,7 +244,11 @@ dbc.Container([
                          
                          ])
     elif tab == 'tab-3':
-        return html.Div([html.H4("Tabela de Dados")])
+        return html.Div([html.H4("Menu de análise dos preços da eletricidade"),
+                         dcc.Graph(
+                id='grafico-precos',
+                figure=precos # gráfico carregado em cima
+            )])
 
 
 
