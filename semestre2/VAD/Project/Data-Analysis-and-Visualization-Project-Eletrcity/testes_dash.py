@@ -6,6 +6,7 @@ from pag1_circulargraphI import circular_total
 from pag1_circulargraphII import create_circular_histogram
 from pag1_spiralgraphI import create_spiral_histogram
 from pag1_areagraph_month_year import area_month_year_interval
+from pag2_meteo_timeseries import create_weather_timeseries
 import altair as alt
 import dash_bootstrap_components as dbc
 import dash_loading_spinners as dls; from helpers import get_new_graph
@@ -16,6 +17,8 @@ app = dash.Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP],suppress_ca
 # Sem isto, o Dash recusa-se a carregar o layout porque vê uma callback a apontar para o dropdown-tecnologia 
 # que não está no layout principal.
 
+
+### Carregar gráficos que não precisam de variáveis para serem inicializados
 streamgraph = altair_areaIII()
 circularI = circular_total()
 
@@ -35,8 +38,8 @@ app.layout = html.Div([
         html.Div([
             dcc.Tabs(id="tabs-menu", value='tab-1', children=[
                 dcc.Tab(label='Sazonalidade', value='tab-1', 
-                        style={'padding': '25px'}, 
-                        selected_style={'padding': '40px'}), 
+                        style={'padding': '25px'},  # espaço para o limite superior
+                        selected_style={'padding': '40px'}),  # espaço para o limite superior quanfo é a tab selecionada
                 
                 dcc.Tab(label='Condições meteorológicas', value='tab-2', 
                         style={'padding': '15px'}, 
@@ -45,13 +48,13 @@ app.layout = html.Div([
                 dcc.Tab(label='Preço', value='tab-3', 
                         style={'padding': '25px'}, 
                         selected_style={'padding': '40px'}),
-            ], style={'height': '90px','width':'600px'}) 
+            ], style={'height': '90px','width':'600px'}) # tamanhos de cada tab
         ], style={'display': 'inline-block', 'verticalAlign': 'middle'})
         
     ], style={
-        'padding': '10px 20px', 
+        'padding': '25px 40px', # espaço dos tabs para os lados (cima e baixo Y esquerda e direita)
         'backgroundColor': 'white', 
-        'borderBottom': '1px solid #ddd',
+        'borderBottom': '1px solid #ddd', # espaço de uma barra de fronteira cinzenta 
         'display': 'flex',        
         'alignItems': 'center'    
     }),
@@ -61,7 +64,7 @@ app.layout = html.Div([
     html.Div(id='tabs-content', style={'padding': '40px'}),
 ])
 
-
+# quando se clica em cada tab
 @app.callback(
     Output('tabs-content', 'children'),
     Input('tabs-menu', 'value')   )
@@ -70,38 +73,36 @@ app.layout = html.Div([
 def render_content(tab):
     if tab == 'tab-1':
         return html.Div([html.H4('Produção energética por tipo em Portugal'),
-                         dvc.Vega(id='streamgraph_prods', spec=streamgraph.to_dict(format='vega')),
-    dbc.Container([
+                         dvc.Vega(id='streamgraph_prods', spec=streamgraph.to_dict(format='vega')), # gráfico streamgraph das produções
+    dbc.Container([ # container para poder colocar dois gráficos lado a lado
     dbc.Row([
-        # COLUNA ESQUERDA: O Gráfico Circular (Fixo)
         dbc.Col([
             dcc.Graph(
                 id='grafico-circular-geral',
-                figure=circularI # O gráfico que já tens pronto
+                figure=circularI # gráfico carregado em cima
             )
         ], width=6), # Ocupa metade do ecrã
 
-        # COLUNA DIREITA: O Detalhe por Tecnologia (Dinâmico)
         dbc.Col([
             html.H4("Detalhe por Tecnologia", style={'textAlign': 'center'}),
             
-            # Filtro para o gráfico da direita
+            # Dropdown para selecionar a tecnologia do gráfico da direita
             html.Div([
                 html.Label("Selecione a Tecnologia:"),
                 dcc.Dropdown(
-                    id='dropdown-tecnologia',
-                    options=[
+                    id='dropdown-tecnologia', # id para se usar no callback
+                    options=[  # opções para o dropdown
                         {'label': 'Eólica', 'value': 'Eólica (kWh)'},
                         {'label': 'Fotovoltaica', 'value': 'Fotovoltaica (kWh)'},
                         {'label': 'Hídrica', 'value': 'Hídrica (kWh)'}
                     ],
-                    value='Eólica (kWh)',
+                    value='Eólica (kWh)', # valor default selecionado
                     clearable=False,
                     style={
-                'width': '40%'
+                'width': '40%' # tamanho da barra, diminuido para não ocupar muito espaço com palavras pequenas
             }
                 ),
-            ], style={'marginBottom': '20px'}),
+            ], style={'marginBottom': '25px'}), # espaço para baixo do dropdown
 
             # Espaço para o gráfico detalhado
             dcc.Graph(id='grafico_tec')
@@ -117,13 +118,14 @@ dbc.Container([
                 dcc.Dropdown(
                     id='dropdown-tecnologiaII',
                     options=[
+                        {'label': 'Total das produções','value':'total'},
                         {'label': 'Eólica', 'value': 'Eólica (kWh)'},
                         {'label': 'Fotovoltaica', 'value': 'Fotovoltaica (kWh)'},
                         {'label': 'Hídrica', 'value': 'Hídrica (kWh)'}
                     ],
-                    value='Eólica (kWh)',
+                    value='total',
                     clearable=False,
-                    style={'width': '100%'} # Ajustado para preencher a coluna
+                    style={'width': '40%'} # Ajustado para preencher a coluna
                 ),
             ], style={'marginBottom': '20px'}),
             dcc.Graph(id='spiral')
@@ -174,7 +176,7 @@ dbc.Container([
                             clearable=False,
                         )
                     ], width=4)
-                ], className="g-10") # 'g-2' adiciona um pequeno espaçamento entre colunas
+                ], className="g-12") # 'g-2' adiciona um pequeno espaçamento entre colunas
             ], style={'marginBottom': '20px'}),
 
             # Gráfico de Área
@@ -183,16 +185,65 @@ dbc.Container([
         ], width=6)
     ])
 ], fluid=True)
-
-                         
-                         ]
-                         
-                         
-                         )
+]       
+)
     elif tab == 'tab-2':
-        return html.Div([html.H4("Gráfico Solar aqui")])
+        return html.Div([html.H4("Condições meteorológicas em Portugal"),
+                         html.Label("Selecione o dado meteorológico:"),
+                dcc.Dropdown(
+                    id='dropdown-meteoI',
+                    options=[
+                        {'label': 'Luz diária de sol','value':'sunlight'},
+                        {'label': 'Temperatura', 'value': 'temperatura'},
+                        {'label': 'Velocidade do vento', 'value': 'vento'},
+                        {'label': 'Precipitação diária (em mm)', 'value': 'precipitacao'},
+                        {'label': 'Nebulosidade', 'value': 'nebulosidade'}
+                    ],
+                    value='temperatura',
+                    clearable=False,
+                    style={'width': '40%'} # Ajustado para preencher a coluna
+                ),
+            dcc.Graph(id='timeseries_tempo'),
+            html.H5("Fator meteorológico vs produção"),
+            dcc.Dropdown(
+                    id='dropdown-meteoII',
+                    className="mb-4",
+                    options=[
+                        {'label': 'Luz diária de sol','value':'sunlight'},
+                        {'label': 'Temperatura', 'value': 'temperatura'},
+                        {'label': 'Velocidade do vento', 'value': 'vento'},
+                        {'label': 'Precipitação diária (em mm)', 'value': 'precipitacao'},
+                        {'label': 'Nebulosidade', 'value': 'nebulosidade'}
+                    ],
+                    value='temperatura',
+                    clearable=False,
+                    style={'width': '40%'} # Ajustado para preencher a coluna
+                ),
+            dcc.Dropdown(
+                    id='dropdown-tecnologiaIII',
+                    options=[
+                        {'label': 'Total das produções','value':'total'},
+                        {'label': 'Eólica', 'value': 'Eólica (kWh)'},
+                        {'label': 'Fotovoltaica', 'value': 'Fotovoltaica (kWh)'},
+                        {'label': 'Hídrica', 'value': 'Hídrica (kWh)'}
+                    ],
+                    value='total',
+                    clearable=False,
+                    style={'width': '40%'} # Ajustado para preencher a coluna
+                ),
+            dcc.Graph(id='meteovsprod'),
+            
+                         
+                         
+                         
+                         
+                         
+                         
+                         ])
     elif tab == 'tab-3':
         return html.Div([html.H4("Tabela de Dados")])
+
+
 
 
 
@@ -240,6 +291,34 @@ def update_circular_graph(mes_escolhido, intervalo_escolhido,ano_escolhido):
     # Certifica-te de que a tua função 'create_circular_histogram' aceita (mes, ano)
     fig = area_month_year_interval(mes,ano,intervalo_escolhido)
     
+    return fig
+
+@app.callback(
+    Output('timeseries_tempo', 'figure'),
+    Input('dropdown-meteoI', 'value')
+)
+def update_weather_timeseries(tecnologia_escolhida):
+    if not tecnologia_escolhida:
+        raise dash.exceptions.PreventUpdate
+        
+    # Chamamos a tua função de histograma espiral
+    fig = create_weather_timeseries(tecnologia_escolhida)
+    return fig
+
+
+
+
+@app.callback(
+    Output('meteovsprod', 'figure'),
+    [Input('dropdown-meteoII', 'value'),
+    Input('dropdown-tecnologiaIII', 'value')]
+)
+def update_weather_timeseries(meteo_escolhido,tecnologia_escolhida):
+    if not tecnologia_escolhida or not meteo_escolhido:
+        raise dash.exceptions.PreventUpdate
+        
+    # Chamamos a tua função de histograma espiral
+    fig = create_meteovsprod(meteo_escolhido,tecnologia_escolhida)
     return fig
 
 

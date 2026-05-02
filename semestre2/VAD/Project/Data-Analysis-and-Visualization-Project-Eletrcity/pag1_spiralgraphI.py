@@ -7,8 +7,15 @@ dfIII = pd.read_csv('data/dados_producao_mesano.csv')
 
 def create_spiral_histogram(tec:str):
     if tec not in dfIII['Tecnologia'].unique():
-        raise ValueError(f"Tecnologia '{tec}' não encontrada. Opções: {dfIII['Tecnologia'].unique()}")
-    df_spiral = dfIII[dfIII['Tecnologia'] == tec]
+        df_spiral = pd.DataFrame(columns=dfIII.columns)
+        i = 0
+        for mes,ano in dfIII[['Mês','Ano']].drop_duplicates().values:
+            total = dfIII[(dfIII['Ano']==ano) & (dfIII['Mês']==mes)].copy()
+            total = total.loc[:,'Producao'].sum()
+            df_spiral.loc[i,:] = [ano,mes,'Total',total,str(mes)+'/'+str(ano)]
+            i+=1
+    else:
+        df_spiral = dfIII[dfIII['Tecnologia'] == tec]
     df_spiral = df_spiral[['Ano', 'Mês', 'Producao']]
     max_val = df_spiral['Producao'].max()
     df_spiral = df_spiral.sort_values(['Ano', 'Mês']).reset_index(drop=True)
@@ -60,7 +67,7 @@ def create_spiral_histogram(tec:str):
         texttemplate="%{text:.4s}", 
         textposition="top center",
         textfont=dict(
-            size=12, # Tamanho menor para não amontoar na parte de dentro da espiral
+            size=9, # Tamanho menor para não amontoar na parte de dentro da espiral
             #color="black",
             family="Arial Black"
         ),
@@ -100,8 +107,8 @@ def create_spiral_histogram(tec:str):
         itemclick=False,      # Desativa o clique simples (esconder/mostrar)
         itemdoubleclick=False # Desativa o duplo clique (isolar um ano)
     ),
-        height=600,
-        width=700,
-        margin=dict(b=30, t=80, l=0, r=10),
+        height=650,
+        width=800,
+        margin=dict(b=30, t=80, l=20, r=20),
     )
     return fig
