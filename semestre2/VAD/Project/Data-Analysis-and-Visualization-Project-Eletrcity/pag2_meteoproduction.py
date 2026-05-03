@@ -19,6 +19,22 @@ df_diarios = df_diarios.sort_values("Data")
 df_hora = df_hora.sort_values("Data")
 
 # =========================
+# CRIAR PRODUÇÃO DIÁRIA
+# =========================
+prod_diaria = (
+    df_hora
+    .groupby("Data", as_index=False)
+    .sum(numeric_only=True)
+)
+
+df_corr = pd.merge(
+    df_diarios,
+    prod_diaria,
+    on="Data",
+    how="inner"
+)
+
+# =========================
 # 2. FUNÇÃO DE LAYOUT
 # =========================
 
