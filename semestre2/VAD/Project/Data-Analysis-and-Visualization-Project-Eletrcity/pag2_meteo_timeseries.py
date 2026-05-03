@@ -1,3 +1,4 @@
+#%%
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -5,7 +6,7 @@ import plotly.io as pio
 
 pio.renderers.default = "browser"
 
-# =========================
+#%% =========================
 # 1. CARREGAMENTO DOS DADOS
 # =========================
 df_diarios = pd.read_csv("data/dados_diarios.csv")
@@ -61,7 +62,7 @@ df_meteo = df_diarios[cols_meteo].copy()
 df_meteo.set_index("Data", inplace=True)
 
 
-
+#%%
 def create_weather_timeseries(tec:str):
     tecs = ['sunlight','temperatura','nebulosidade','precipitacao','vento']
     if tec not in tecs:
@@ -195,18 +196,3 @@ def create_weather_timeseries(tec:str):
             "Minutos"
         )
         return fig_sun
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-

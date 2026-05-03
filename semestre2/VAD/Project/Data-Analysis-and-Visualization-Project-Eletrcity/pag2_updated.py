@@ -380,11 +380,33 @@ fig_dual.show()
 
 #%%
 # =========================
-# 11B. STREAMGRAPH - PRODUÇÃO TOTAL VS METEOROLOGIA
+# 11. PRODUÇÃO VS METEOROLOGIA COM DUPLO FILTRO
 # =========================
 
-def minmax_scale(series):
-    return (series - series.min()) / (series.max() - series.min())
+# Criar produção diária a partir dos dados horários
+
+df_hora = pd.read_csv("data/dados_hora.csv")
+df_hora["Data"] = pd.to_datetime(df_hora["Data"])
+
+prod_diaria = (
+    df_hora
+    .groupby("Data", as_index=False)
+    .sum(numeric_only=True)
+)
+df_prod_meteo = pd.merge(
+    prod_diaria,
+    df_diarios,
+    on="Data",
+    how="inner"
+)
+
+producao_cols = {
+    "Produção total": "Rede Distribuição (kWh)",
+    "Solar": "Solar (kWh)",
+    "Eólica": "Eólica (kWh)",
+    "Hídrica": "Hídrica (kWh)",
+    "Biomassa": "Biomassa (kWh)"
+}
 
 meteo_cols = {
     "Temperatura média": "temp_C_mean",
@@ -394,56 +416,79 @@ meteo_cols = {
     "Luz solar": "Sunlight (em minutos)"
 }
 
-df_stream = df_prod_meteo.copy()
+# Remover colunas que não existam no teu dataset
+producao_cols = {
+    label: col for label, col in producao_cols.items()
+    if col in df_prod_meteo.columns
+}
 
-# Normalizar produção para poder comparar visualmente com meteorologia
-df_stream["prod_norm"] = minmax_scale(df_stream["Rede Distribuição (kWh)"])
+meteo_cols = {
+    label: col for label, col in meteo_cols.items()
+    if col in df_prod_meteo.columns
+}
 
-fig_stream = go.Figure()
+fig_dual = go.Figure()
 
-# Área fixa: produção total
-fig_stream.add_trace(go.Scatter(
-    x=df_stream["Data"],
-    y=df_stream["prod_norm"],
+prod_labels = list(producao_cols.keys())
+prod_columns = list(producao_cols.values())
+
+meteo_labels = list(meteo_cols.keys())
+meteo_columns = list(meteo_cols.values())
+
+# Linha de produção inicial
+fig_dual.add_trace(go.Scatter(
+    x=df_prod_meteo["Data"],
+    y=df_prod_meteo[prod_columns[0]],
+    name=prod_labels[0],
     mode="lines",
-    name="Produção Total",
-    fill="tozeroy",
-    line=dict(width=0.5, color="#1f77b4"),
-    fillcolor="rgba(31, 119, 180, 0.75)"
+    yaxis="y1",
+    line=dict(color="#1f4e79", width=3)
 ))
 
-# Áreas meteorológicas, uma visível de cada vez
-for i, (label, col) in enumerate(meteo_cols.items()):
-    df_stream[f"{col}_norm"] = -minmax_scale(df_stream[col])
+# Linha meteorológica inicial
+fig_dual.add_trace(go.Scatter(
+    x=df_prod_meteo["Data"],
+    y=df_prod_meteo[meteo_columns[0]],
+    name=meteo_labels[0],
+    mode="lines",
+    yaxis="y2",
+    line=dict(color="#c62828", width=2.5)
+))
 
-    fig_stream.add_trace(go.Scatter(
-        x=df_stream["Data"],
-        y=df_stream[f"{col}_norm"],
-        mode="lines",
-        name=label,
-        fill="tozeroy",
-        visible=(i == 0),
-        line=dict(width=0.5, color="#ff3b5c"),
-        fillcolor="rgba(255, 59, 92, 0.75)"
-    ))
+# Dropdown produção
+buttons_prod = []
 
-buttons = []
-
-for i, (label, col) in enumerate(meteo_cols.items()):
-    visible = [True] + [False] * len(meteo_cols)
-    visible[i + 1] = True
-
-    buttons.append(dict(
+for label, col in producao_cols.items():
+    buttons_prod.append(dict(
         label=label,
-        method="update",
+        method="restyle",
         args=[
-            {"visible": visible},
-            {"title": f"Streamgraph: Produção Total vs {label}"}
+            {
+                "y": [df_prod_meteo[col]],
+                "name": label
+            },
+            [0]
         ]
     ))
 
-fig_stream.update_layout(
-    title="Streamgraph: Produção Total vs Temperatura média",
+# Dropdown meteorologia
+buttons_meteo = []
+
+for label, col in meteo_cols.items():
+    buttons_meteo.append(dict(
+        label=label,
+        method="restyle",
+        args=[
+            {
+                "y": [df_prod_meteo[col]],
+                "name": label
+            },
+            [1]
+        ]
+    ))
+
+fig_dual.update_layout(
+    title="Produção Energética vs Condições Meteorológicas",
     template="plotly_white",
     width=1400,
     height=600,
@@ -453,38 +498,73 @@ fig_stream.update_layout(
     xaxis=dict(
         title="Data",
         rangeslider=dict(visible=True),
-        showgrid=False
+        showgrid=True
     ),
 
     yaxis=dict(
-        title="Valores normalizados",
-        showgrid=False,
-        zeroline=True,
-        zerolinewidth=2,
-        zerolinecolor="black",
-        tickvals=[-1, -0.5, 0, 0.5, 1],
-        ticktext=["Meteorologia alta", "", "Centro", "", "Produção alta"]
+        title="Produção Energética (kWh)",
+        side="left",
+        showgrid=True
+    ),
+
+    yaxis2=dict(
+        title="Variável Meteorológica",
+        side="right",
+        overlaying="y",
+        showgrid=False
     ),
 
     updatemenus=[
         dict(
-            buttons=buttons,
+            buttons=buttons_prod,
             direction="down",
-            x=1.05,
-            y=1.15,
-            showactive=True
+            x=1.02,
+            y=1.20,
+            showactive=True,
+            xanchor="left",
+            yanchor="top"
+        ),
+        dict(
+            buttons=buttons_meteo,
+            direction="down",
+            x=1.02,
+            y=1.05,
+            showactive=True,
+            xanchor="left",
+            yanchor="top"
+        )
+    ],
+
+    annotations=[
+        dict(
+            text="Produção:",
+            x=1.02,
+            y=1.26,
+            xref="paper",
+            yref="paper",
+            showarrow=False,
+            align="left"
+        ),
+        dict(
+            text="Meteorologia:",
+            x=1.02,
+            y=1.11,
+            xref="paper",
+            yref="paper",
+            showarrow=False,
+            align="left"
         )
     ],
 
     legend=dict(
         orientation="h",
-        y=-0.25
+        y=-0.3
     ),
 
-    margin=dict(l=60, r=120, t=90, b=80)
+    margin=dict(l=60, r=180, t=100, b=80)
 )
 
-fig_stream.show()
+fig_dual.show()
 
 #%%
 # =========================
@@ -540,4 +620,3 @@ fig_heatmap.update_layout(
 fig_heatmap.update_xaxes(tickangle=45)
 
 fig_heatmap.show()
-# %%
