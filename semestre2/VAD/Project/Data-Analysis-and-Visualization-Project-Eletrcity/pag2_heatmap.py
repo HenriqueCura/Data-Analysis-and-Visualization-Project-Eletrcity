@@ -35,14 +35,18 @@ cols_corr = [
     "Sunlight (em minutos)",
     "Rede Distribuição (kWh)",
     "Solar (kWh)",
+    "Fotovoltaica (kWh)",
     "Eólica (kWh)",
-    "Hídrica (kWh)",
-    "Biomassa (kWh)"
+    "Hídrica (kWh)"
 ]
 
 cols_corr = [col for col in cols_corr if col in df_corr.columns]
 
 df_corr = df_corr[cols_corr].copy()
+
+df_corr = df_corr.rename(columns={
+    "Rede Distribuição (kWh)": "Total Produção"
+})
 
 corr_matrix = df_corr.corr()
 
