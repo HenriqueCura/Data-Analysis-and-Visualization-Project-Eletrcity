@@ -125,13 +125,14 @@ def plot_sunlight(df):
     )
     return fig
 
+
 def create_meteovsprod(meteo: str, tec: str):
     if meteo not in meteo_cols:
         raise ValueError(f"Valor meteorológico incorreto. Deve ser um de {list(meteo_cols)}")
     if tec not in producao_cols:
         raise ValueError(f"Tecnologia incorreta. Deve ser uma de {list(producao_cols)}")
 
-    meteo_label, meteo_col, meteo_color = meteo_cols[meteo]
+    meteo_label, meteo_col, _ = meteo_cols[meteo]
     prod_label, prod_col = producao_cols[tec]
 
     fig = go.Figure()
@@ -142,7 +143,8 @@ def create_meteovsprod(meteo: str, tec: str):
         name=prod_label,
         mode="lines",
         yaxis="y1",
-        line=dict(color="#1f4e79", width=3)
+        opacity=0.75,
+        line=dict(color="#1f4e79", width=2)
     ))
 
     fig.add_trace(go.Scatter(
@@ -151,94 +153,9 @@ def create_meteovsprod(meteo: str, tec: str):
         name=meteo_label,
         mode="lines",
         yaxis="y2",
-        line=dict(color=meteo_color, width=2.5)
+        opacity=0.75,
+        line=dict(color="#c62828", width=2)
     ))
-
-    fig.update_layout(
-        title=f"{prod_label} vs {meteo_label}",
-        template="plotly_white",
-        width=1400,
-        height=600,
-        title_x=0.5,
-        hovermode="x unified",
-        xaxis=dict(
-            title="Data",
-            rangeslider=dict(visible=True),
-            showgrid=True
-        ),
-        yaxis=dict(
-            title="Produção Energética (kWh)",
-            side="left",
-            showgrid=True
-        ),
-        yaxis2=dict(
-            title=meteo_label,
-            side="right",
-            overlaying="y",
-            showgrid=False
-        ),
-        legend=dict(
-            orientation="h",
-            y=-0.3
-        ),
-        margin=dict(l=60, r=90, t=90, b=80)
-    )
-    return fig
-
-def create_meteovsprod_interactive():
-    fig = go.Figure()
-
-    prod_options = list(dict.fromkeys(producao_cols.values()))
-    prod_labels = [config[0] for config in prod_options]
-    prod_columns = [config[1] for config in prod_options]
-    meteo_labels = [config[0] for config in meteo_cols.values()]
-    meteo_columns = [config[1] for config in meteo_cols.values()]
-
-    fig.add_trace(go.Scatter(
-        x=df_prod_meteo["Data"],
-        y=df_prod_meteo[prod_columns[0]],
-        name=prod_labels[0],
-        mode="lines",
-        yaxis="y1",
-        line=dict(color="#1f4e79", width=3)
-    ))
-
-    fig.add_trace(go.Scatter(
-        x=df_prod_meteo["Data"],
-        y=df_prod_meteo[meteo_columns[0]],
-        name=meteo_labels[0],
-        mode="lines",
-        yaxis="y2",
-        line=dict(color="#c62828", width=2.5)
-    ))
-
-    buttons_prod = []
-    for label, col in zip(prod_labels, prod_columns):
-        buttons_prod.append(dict(
-            label=label,
-            method="restyle",
-            args=[
-                {
-                    "y": [df_prod_meteo[col]],
-                    "name": label
-                },
-                [0]
-            ]
-        ))
-
-    buttons_meteo = []
-    for label, col in zip(meteo_labels, meteo_columns):
-        buttons_meteo.append(dict(
-            label=label,
-            method="restyle",
-            args=[
-                {
-                    "y": [df_prod_meteo[col]],
-                    "name": label
-                },
-                [1]
-            ]
-        ))
 
     fig.update_layout(
         title="Produção Energética vs Condições Meteorológicas",
@@ -263,50 +180,10 @@ def create_meteovsprod_interactive():
             overlaying="y",
             showgrid=False
         ),
-        updatemenus=[
-            dict(
-                buttons=buttons_prod,
-                direction="down",
-                x=1.02,
-                y=1.20,
-                showactive=True,
-                xanchor="left",
-                yanchor="top"
-            ),
-            dict(
-                buttons=buttons_meteo,
-                direction="down",
-                x=1.02,
-                y=1.05,
-                showactive=True,
-                xanchor="left",
-                yanchor="top"
-            )
-        ],
-        annotations=[
-            dict(
-                text="Produção:",
-                x=1.02,
-                y=1.26,
-                xref="paper",
-                yref="paper",
-                showarrow=False,
-                align="left"
-            ),
-            dict(
-                text="Meteorologia:",
-                x=1.02,
-                y=1.11,
-                xref="paper",
-                yref="paper",
-                showarrow=False,
-                align="left"
-            )
-        ],
         legend=dict(
             orientation="h",
             y=-0.3
         ),
-        margin=dict(l=60, r=180, t=100, b=80)
+        margin=dict(l=60, r=90, t=90, b=80)
     )
     return fig
