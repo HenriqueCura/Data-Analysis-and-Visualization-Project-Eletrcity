@@ -39,12 +39,18 @@ def create_spiral_histogram(tec:str):
 
     # --- 2. Criação do Gráfico ---
     fig = go.Figure()
+    cores_anos = {
+    2023: "#636EFA", # Azul (Centro)
+        2024: "#00CC96", # Verde (Meio)
+        2025: "#EC9026", # Laranja (Exterior)
+        "Total": "#AB63FA"}
 
-    # Usamos loops para adicionar cores e rótulos de forma organizada
-    # (Simulando o interaction(month, year) do R)
+
     for year in df_spiral['Ano'].unique():
         temp = df_spiral[df_spiral['Ano'] == year]
         
+        cor_do_ano = cores_anos.get(year, "grey")
+
         fig.add_trace(go.Barpolar(
             r=temp['Producao'] / norm_factor, # Comprimento da barra
             # Convertemos meses (1-12) em graus (0-360) para ocupar o círculo todo
@@ -52,34 +58,15 @@ def create_spiral_histogram(tec:str):
             base=temp['r_base']*2,          # O SEGREDO: O offset que cria a espiral
             name=str(year),
             customdata=temp['Producao'],
-            hovertemplate="<b>Produção:</b> %{customdata:.2e} kWh<extra></extra>",
-            thetaunit="degrees"
+            hovertemplate="<b>Produção:</b> %{customdata:.3e} kWh<extra></extra>",
+            thetaunit="degrees",
+            marker=dict(color=cor_do_ano),
+            
         ))
-
-        r_texto = (temp['r_base'] * 2) + (temp['Producao'] / norm_factor)
-
-        fig.add_trace(go.Scatterpolar(
-        r=r_texto,
-        theta=temp['Mês'] * (360/12),
-        mode='text',
-        text=temp['Producao'],
-        # Usamos texttemplate para o Plotly formatar automaticamente (k, M, G)
-        texttemplate="%{text:.4s}", 
-        textposition="top center",
-        textfont=dict(
-            size=9, # Tamanho menor para não amontoar na parte de dentro da espiral
-            #color="black",
-            family="Arial Black"
-        ),
-        hoverinfo='none',
-        showlegend=False,
-        # Importante: colocar o texto numa camada acima
-        cliponaxis=False))
 
     # --- 3. Layout Estilizado (Limpo e Focado na Forma) ---
     r_real_max = (df_spiral['r_base'].max() * 2) + (df_spiral['Producao'].max() / norm_factor)
     fig.update_layout(
-        title="Spiral Histogram: Evolução da Produção Eólica (kWh)",
         font_size=16,
         polar=dict(
             hole=0.2,
@@ -102,7 +89,6 @@ def create_spiral_histogram(tec:str):
         ),
         # Mostramos a legenda apenas para os anos
         showlegend=True,
-        #legend=dict(title="Ano de Produção", font=dict(size=12), itemsizing='constant'),
         legend=dict(
         itemclick=False,      # Desativa o clique simples (esconder/mostrar)
         itemdoubleclick=False # Desativa o duplo clique (isolar um ano)

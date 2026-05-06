@@ -7,6 +7,7 @@ from pag1_circulargraphII import create_circular_histogram
 from pag1_spiralgraphI import create_spiral_histogram
 from pag1_areagraph_month_year import area_month_year_interval
 from pag2_meteo_timeseries import create_weather_timeseries
+from pag2_meteoproduction import create_meteovsprod
 from pag3_priceseries import create_price_timeseries
 import altair as alt
 import dash_bootstrap_components as dbc
@@ -74,11 +75,14 @@ app.layout = html.Div([
 
 def render_content(tab):
     if tab == 'tab-1':
-        return html.Div([html.H4('Produção energética por tipo em Portugal'),
+        return html.Div([html.H4('Evolução da produção energética por tipo em Portugal'),
+                         # title=f"Evolução da produção energética em {dic_month[month]} de {year}"
                          dvc.Vega(id='streamgraph_prods', spec=streamgraph.to_dict(format='vega')), # gráfico streamgraph das produções
     dbc.Container([ # container para poder colocar dois gráficos lado a lado
     dbc.Row([
         dbc.Col([
+            #title=f"Evolução Mensal da Produção de Energia: {r}",
+            html.H4("Evolução Mensal por Tecnologia de produção"),
             dcc.Graph(
                 id='grafico-circular-geral',
                 figure=circularI # gráfico carregado em cima
@@ -86,7 +90,8 @@ def render_content(tab):
         ], width=6), # Ocupa metade do ecrã
 
         dbc.Col([
-            html.H4("Evolução temporal por Tecnologia", style={'textAlign': 'left'}),
+            
+            # title=f"Evolução Mensal da Produção de Energia: {r}",
             
             # Dropdown para selecionar a tecnologia do gráfico da direita
             html.Div([
@@ -105,7 +110,8 @@ def render_content(tab):
             }
                 ),
             ], style={'marginBottom': '25px'}), # espaço para baixo do dropdown
-
+            html.H4(id='titulo-evolucao', style={'textAlign': 'left'}),
+            #html.H4(f"Evolução Mensal por {dropdown-tecnologia}", style={'textAlign': 'left'}),
             # Espaço para o gráfico detalhado
             dcc.Graph(id='grafico_tec'),
             
@@ -131,6 +137,8 @@ dbc.Container([
                     style={'width': '40%'} # Ajustado para preencher a coluna
                 ),
             ], style={'marginBottom': '20px'}),
+            #title=
+            html.H4("Spiral Histogram: Evolução da produção selecionada"),
             dcc.Graph(id='spiral')
         ], width=6),
 
@@ -155,12 +163,13 @@ dbc.Container([
 
                     # Ano
                     dbc.Col([
-                        dcc.RadioItems(
+                        dcc.Dropdown(
                             id='radio-ano',
-                            options=['2023', '2024', '2025'],
+                            options=[{'label': '2023', 'value': '2023'},
+                                {'label': '2024', 'value': '2024'},
+                                {'label': '2025', 'value': '2025'},],
                             value='2023',
-                            inline=True,
-                            style={'marginTop': '5px'}
+                            clearable=False,
                         )
                     ], width=4),
 
@@ -182,6 +191,11 @@ dbc.Container([
                 ], className="g-12") # 'g-2' adiciona um pequeno espaçamento entre colunas
             ], style={'marginBottom': '20px'}),
 
+            html.H4("Evolução Mensal da Produção de Energia em Portugal"), # Título principal
+            #"subtitle": "Distribuição horária por tecnologia", # Subtítulo opcional
+            #"fontSize": 30,
+            #"anchor": "middle", # Alinha o título à esquerda
+            #"color": "black
             # Gráfico de Área
             dcc.Graph(id='area_graph')
             
@@ -208,7 +222,10 @@ dbc.Container([
                 ),
             dcc.Graph(id='timeseries_tempo'),
             html.H5("Fator meteorológico vs produção"),
-            dcc.Dropdown(
+            dbc.Row([
+                    # Mês
+                    dbc.Col([
+                        dcc.Dropdown(
                     id='dropdown-meteoII',
                     className="mb-4",
                     options=[
@@ -220,9 +237,12 @@ dbc.Container([
                     ],
                     value='temperatura',
                     clearable=False,
-                    style={'width': '40%'} # Ajustado para preencher a coluna
-                ),
-            dcc.Dropdown(
+                    style={'width': '90%'} # Ajustado para preencher a coluna
+                )],width=2),
+
+                    # Ano
+                    dbc.Col([
+                        dcc.Dropdown(
                     id='dropdown-tecnologiaIII',
                     options=[
                         {'label': 'Total das produções','value':'total'},
@@ -232,8 +252,11 @@ dbc.Container([
                     ],
                     value='total',
                     clearable=False,
-                    style={'width': '40%'} # Ajustado para preencher a coluna
+                    style={'width': '90%'} # Ajustado para preencher a coluna
                 ),
+                    ], width=2),
+            ]),
+            
             dcc.Graph(id='meteovsprod'),
             
                          
@@ -328,6 +351,15 @@ def update_weather_timeseries(meteo_escolhido,tecnologia_escolhida):
     fig = create_meteovsprod(meteo_escolhido,tecnologia_escolhida)
     return fig
 
+@app.callback(
+    Output('titulo-evolucao', 'children'),
+    Input('dropdown-tecnologia', 'value')
+)
+def update_title(tecnologia_selecionada):
+    # Remove o '(kWh)' apenas para o título ficar mais limpo visualmente
+    nome_limpo = tecnologia_selecionada.replace(' (kWh)', '')
+    
+    return f"Evolução Mensal: {nome_limpo}"
 
 
 if __name__ == '__main__':

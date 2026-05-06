@@ -97,7 +97,7 @@ def plot_sunlight(df):
         df,
         x=df.index,
         y="Sunlight (em minutos)",
-        title="Luz Solar Diária",
+        #title="Luz Solar Diária",
         labels={"Sunlight (em minutos)": "Minutos de Luz Solar"}
     )
 

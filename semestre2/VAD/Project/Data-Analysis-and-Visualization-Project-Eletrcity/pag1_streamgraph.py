@@ -81,13 +81,6 @@ def altair_areaIII():
         
         tooltip=['yearmonth(Data/Hora)', 'Tecnologia', 'sum(kWh)']
     ).properties(
-        title={
-            "text": "Evolução Mensal da Produção de Energia em Portugal", # Título principal
-            #"subtitle": "Distribuição horária por tecnologia", # Subtítulo opcional
-            "fontSize": 30,
-            "anchor": "middle", # Alinha o título à esquerda
-            "color": "black"
-        },
         width='container',
         height=500,
     ).interactive()
