@@ -37,7 +37,6 @@ def create_circular_histogram(tec:str):
         theta="Mes/Ano",
         color="Ano",
         labels="Ano",
-        title=f"Evolução Mensal da Produção de Energia: {r}",
         color_discrete_sequence=cor
     ).update_layout(
         showlegend=True,

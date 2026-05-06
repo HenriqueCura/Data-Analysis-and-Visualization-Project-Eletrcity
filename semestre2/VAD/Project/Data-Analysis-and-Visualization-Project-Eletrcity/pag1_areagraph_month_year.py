@@ -54,6 +54,6 @@ def area_month_year_interval(month:int,year:int,interval:str):
     value_name='Producao'
 )
     fig = px.area(df_new, x="Hora", y="Producao", color="Tecnologia", 
-                  title=f"Evolução da produção energética em {dic_month[month]} de {year}", 
+                   
                   color_discrete_sequence=["#14FDA4", "#D6D30B", "#2375F0","grey"])
     return fig

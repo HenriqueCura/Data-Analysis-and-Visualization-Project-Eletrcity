@@ -15,9 +15,8 @@ df_hora["Data"] = pd.to_datetime(df_hora["Data"])
 df_diarios = df_diarios.sort_values("Data")
 df_hora = df_hora.sort_values("Data")
 
-def beautify_figure(fig, title, yaxis_title):
+def beautify_figure(fig,yaxis_title):
     fig.update_layout(
-        title=title,
         template="plotly_white",
         width=1400,
         height=500,
@@ -93,8 +92,8 @@ def create_weather_timeseries(tec:str):
 
         fig_temp = beautify_figure(
             fig_temp,
-            "Evolução da Temperatura ao Longo do Tempo",
-            "Temperatura (°C)"
+            #"Evolução da Temperatura ao Longo do Tempo",
+            yaxis_title="Temperatura (°C)"
         )
         return fig_temp
     elif tec == 'vento':
@@ -126,8 +125,8 @@ def create_weather_timeseries(tec:str):
 
         fig_wind = beautify_figure(
             fig_wind,
-            "Evolução da Velocidade do Vento ao Longo do Tempo",
-            "Velocidade do vento"
+            #"Evolução da Velocidade do Vento ao Longo do Tempo",
+            yaxis_title="Velocidade do vento"
         )
         return fig_wind
     elif tec == 'precipitacao':
@@ -141,8 +140,8 @@ def create_weather_timeseries(tec:str):
 
         fig_precip = beautify_figure(
             fig_precip,
-            "Evolução da Precipitação ao Longo do Tempo",
-            "Precipitação (mm)"
+            #"Evolução da Precipitação ao Longo do Tempo",
+            yaxis_title="Precipitação (mm)"
         )
         return fig_precip
     elif tec=='nebulosidade':
@@ -174,8 +173,8 @@ def create_weather_timeseries(tec:str):
 
         fig_cloud = beautify_figure(
             fig_cloud,
-            "Evolução da Cobertura de Nuvens ao Longo do Tempo",
-            "Cobertura de nuvens (%)"
+            #"Evolução da Cobertura de Nuvens ao Longo do Tempo",
+            yaxis_title="Cobertura de nuvens (%)"
         )
         return fig_cloud
     else:
@@ -189,7 +188,7 @@ def create_weather_timeseries(tec:str):
 
         fig_sun = beautify_figure(
             fig_sun,
-            "Evolução da Luz Solar ao Longo do Tempo",
-            "Minutos"
+            #"Evolução da Luz Solar ao Longo do Tempo",
+            yaxis_title="Minutos"
         )
         return fig_sun

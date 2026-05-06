@@ -97,7 +97,7 @@ def plot_sunlight(df):
         df,
         x=df.index,
         y="Sunlight (em minutos)",
-        title="Luz Solar Diária",
+        #title="Luz Solar Diária",
         labels={"Sunlight (em minutos)": "Minutos de Luz Solar"}
     )
 
@@ -155,7 +155,7 @@ def create_meteovsprod(meteo: str, tec: str):
     ))
 
     fig.update_layout(
-        title=f"{prod_label} vs {meteo_label}",
+        #title=f"{prod_label} vs {meteo_label}",
         template="plotly_white",
         width=1400,
         height=600,
@@ -241,7 +241,7 @@ def create_meteovsprod_interactive():
         ))
 
     fig.update_layout(
-        title="Produção Energética vs Condições Meteorológicas",
+        #title="Produção Energética vs Condições Meteorológicas",
         template="plotly_white",
         width=1400,
         height=600,

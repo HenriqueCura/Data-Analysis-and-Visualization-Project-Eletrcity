@@ -35,7 +35,6 @@ def circular_total():
         theta="Mes/Ano",
         color="Tecnologia",
         labels="Ano",
-        title=f"Evolução Mensal da Produção de Energia: {r}",
         color_discrete_sequence=px.colors.qualitative.Set3).update_layout(
         showlegend=True,
         coloraxis_showscale=False,
