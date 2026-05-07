@@ -59,18 +59,20 @@ def create_correlation_heatmap():
         color_continuous_scale="RdBu_r",
         zmin=-1,
         zmax=1,
-        title="Matriz de Correlação entre Meteorologia e Produção Energética"
+        #title="Matriz de Correlação entre Meteorologia e Produção Energética"
     )
 
     fig.update_layout(
         template="plotly_white",
-        width=1100,
-        height=900,
+        #width=1400,
+        #height=600,
+        width=None, 
+        autosize=True,
         title_x=0.5,
         xaxis_title="Variáveis",
         yaxis_title="Variáveis",
         font=dict(size=13),
-        margin=dict(l=80, r=80, t=90, b=120)
+        margin=dict(l=0, r=80, t=90, b=120)
     )
 
     fig.update_xaxes(tickangle=45)

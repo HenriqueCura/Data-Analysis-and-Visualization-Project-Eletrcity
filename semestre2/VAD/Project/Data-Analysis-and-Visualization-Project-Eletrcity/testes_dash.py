@@ -7,6 +7,7 @@ from pag1_circulargraphII import create_circular_histogram
 from pag1_spiralgraphI import create_spiral_histogram
 from pag1_areagraph_month_year import area_month_year_interval
 from pag2_meteo_timeseries import create_weather_timeseries
+from pag2_heatmap import create_correlation_heatmap
 from pag2_meteoproduction import create_meteovsprod
 from pag3_priceseries import create_price_timeseries
 import altair as alt
@@ -24,6 +25,7 @@ app = dash.Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP],suppress_ca
 streamgraph = altair_areaIII()
 circularI = circular_total()
 precos = create_price_timeseries()
+heatmap = create_correlation_heatmap()
 
 
 app.layout = html.Div([
@@ -221,10 +223,12 @@ dbc.Container([
                     ],
                     value='temperatura',
                     clearable=False,
-                    style={'width': '40%'} # Ajustado para preencher a coluna
+                    style={'width': '30%'} # Ajustado para preencher a coluna
                 ),
             dcc.Graph(id='timeseries_tempo',style={'width': '100%', 'height': '600px'}),
-            html.H5("Fator meteorológico vs produção"),
+            html.H4("Correlações entre as diferentes produções e fatores meteorológicos"),
+            dcc.Graph(id='heatmap', figure=heatmap ,style={'width': '100%', 'height': '800px'}),
+            html.H4("Fator meteorológico vs produção"),
             dbc.Row([
                     # Mês
                     dbc.Col([
@@ -258,7 +262,7 @@ dbc.Container([
                     style={'width': '90%'} # Ajustado para preencher a coluna
                 ),
                     ], width=2),
-            ]),
+            ], style={'marginBottom': '0px','marginTop':'25px'}),
             
             dcc.Graph(id='meteovsprod',style={'width': '100%', 'height': '600px'}),
             

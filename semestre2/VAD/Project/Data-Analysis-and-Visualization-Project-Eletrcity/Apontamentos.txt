@@ -17,11 +17,15 @@ disclaimer - por causa do centro geodésico
 
 VER QUESTÕES ANALITICAS; DERIVAR REQUISITOS
 
-- qual a sazonalidade da produção de diferente tipo de energias?
-- qual o impacto do número de luz solar diária no consumo de energia e na produção fotovoltaica?
-- qual o impacto das condições meteorológicas no preço da energia?
-- qual o impacto da produção de diferentes energias no preço da eletricidade?
-- qual a evolução da produção de energia e dos diferentes tipos ao longo dos últimos 3 anos em território nacional?
+- qual a sazonalidade da produção de diferente tipo de energias? ( pág. 1) ( qual a relação entre produção total e dependências de fontes especificas)
+- qual o impacto do número de luz solar diária no consumo de energia e na produção fotovoltaica? ( pág. 2)
+- temperatura, vento, nebulosidade ( pág.2 )
+- qual o impacto das condições meteorológicas no preço da energia? ( pág. 3)
+- qual o impacto da produção de diferentes energias no preço da eletricidade? ( pág. 3)
+- qual a evolução da produção de energia e dos diferentes tipos ao longo dos últimos 3 anos em território nacional? ( pág. 1)
 
+  
+
+esquerda é onde o humano presta mais atenção
 
 

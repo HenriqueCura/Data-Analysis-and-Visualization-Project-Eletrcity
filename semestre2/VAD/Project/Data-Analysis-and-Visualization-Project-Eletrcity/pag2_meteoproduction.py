@@ -105,15 +105,17 @@ def plot_sunlight(df):
 
     fig.update_layout(
         template="plotly_white",
-        width=1400,
-        height=500,
+        #width=1400,
+        #height=600,
+        width=None, 
+        autosize=True,
         xaxis_title="Data",
         yaxis_title="Minutos de Luz Solar",
         title_x=0.5,
         hovermode="x unified",
         legend_title="Variáveis",
         font=dict(size=14),
-        margin=dict(l=50, r=40, t=70, b=50)
+        margin=dict(l=50, r=40, t=20, b=50)
     )
 
     fig.update_xaxes(
