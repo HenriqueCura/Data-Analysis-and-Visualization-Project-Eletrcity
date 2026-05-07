@@ -10,6 +10,7 @@ from pag2_meteo_timeseries import create_weather_timeseries
 from pag2_heatmap import create_correlation_heatmap
 from pag2_meteoproduction import create_meteovsprod
 from pag3_priceseries import create_price_timeseries
+from pag3_calendarbased import create_cluster_calendar_visualization
 import altair as alt
 import dash_bootstrap_components as dbc
 import dash_loading_spinners as dls; from helpers import get_new_graph
@@ -26,6 +27,7 @@ streamgraph = altair_areaIII()
 circularI = circular_total()
 precos = create_price_timeseries()
 heatmap = create_correlation_heatmap()
+calendar = create_cluster_calendar_visualization()
 
 
 app.layout = html.Div([
@@ -77,7 +79,9 @@ app.layout = html.Div([
 
 def render_content(tab):
     if tab == 'tab-1':
-        return html.Div([html.H4('Evolução da produção energética por tipo em Portugal'),
+        return html.Div([html.H2('Sazonalidade na produção energética em Portugal'),
+                         html.H4(),
+                        html.H4('Evolução da produção energética discriminada por tipo em Portugal'),
                          # title=f"Evolução da produção energética em {dic_month[month]} de {year}"
                          dvc.Vega(id='streamgraph_prods', spec=streamgraph.to_dict(format='vega'),
                                   opt={'actions': False} ),          # Desativa o menu de exportação e ver código), # gráfico streamgraph das produções
@@ -126,6 +130,7 @@ dbc.Container([
         # --- COLUNA ESQUERDA ---
         dbc.Col([
             html.Div([
+                html.H4("Spiral Histogram: Evolução da produção selecionada"),
                 html.Label("Selecione a Tecnologia:"),
                 dcc.Dropdown(
                     id='dropdown-tecnologiaII',
@@ -141,7 +146,7 @@ dbc.Container([
                 ),
             ], style={'marginBottom': '20px'}),
             #title=
-            html.H4("Spiral Histogram: Evolução da produção selecionada"),
+            
             dcc.Graph(id='spiral',config={
         'displayModeBar': False,  # Esconde a toolbar permanentemente
     }),
@@ -149,7 +154,7 @@ dbc.Container([
 
         # --- COLUNA DIREITA ---
         dbc.Col([
-            html.H4("Detalhe por Tecnologia", style={'textAlign': 'center'}),
+            html.H4("Evolução Mensal da Produção de Energia em Portugal"),
             
             # Zona de Filtros
             html.Div([
@@ -180,6 +185,7 @@ dbc.Container([
 
                     # Intervalo
                     dbc.Col([
+                        
                         dcc.Dropdown(
                             id='dropdown-intervalo',
                             options=[
@@ -196,7 +202,7 @@ dbc.Container([
                 ], className="g-12") # 'g-2' adiciona um pequeno espaçamento entre colunas
             ], style={'marginBottom': '20px'}),
 
-            html.H4("Evolução Mensal da Produção de Energia em Portugal"), # Título principal
+             # Título principal
             #"subtitle": "Distribuição horária por tecnologia", # Subtítulo opcional
             #"fontSize": 30,
             #"anchor": "middle", # Alinha o título à esquerda
@@ -227,7 +233,7 @@ dbc.Container([
                 ),
             dcc.Graph(id='timeseries_tempo',style={'width': '100%', 'height': '600px'}),
             html.H4("Correlações entre as diferentes produções e fatores meteorológicos"),
-            dcc.Graph(id='heatmap', figure=heatmap ,style={'width': '100%', 'height': '800px'}),
+            dcc.Graph(id='heatmap', figure=heatmap ,style={'width': '100%', 'height': '700px'},config={'displayModeBar': False,}),
             html.H4("Fator meteorológico vs produção"),
             dbc.Row([
                     # Mês
@@ -262,9 +268,10 @@ dbc.Container([
                     style={'width': '90%'} # Ajustado para preencher a coluna
                 ),
                     ], width=2),
-            ], style={'marginBottom': '0px','marginTop':'25px'}),
+            ], style={'marginBottom': '0px','marginTop':'250px'}),
             
             dcc.Graph(id='meteovsprod',style={'width': '100%', 'height': '600px'}),
+            
             
                          
                          
@@ -274,11 +281,41 @@ dbc.Container([
                          
                          ])
     elif tab == 'tab-3':
-        return html.Div([html.H4("Menu de análise dos preços da eletricidade"),
-                         dcc.Graph(
-                id='grafico-precos',
-                figure=precos # gráfico carregado em cima
-            )])
+        return html.Div([
+            html.H4("Menu de análise dos preços da eletricidade"),
+            dcc.Graph(id='grafico-precos', figure=precos),
+            dbc.Row([
+    html.H4('Agrupamento dos preços para o ano selecionado'),
+    dbc.Col([
+        dcc.Dropdown(
+            id='dropdown-cluster',
+            options=[
+                {'label': 'Preços mais baixos', 'value': 'baixos'},
+                {'label': 'Preços intermédios', 'value': 'medios'},
+                {'label': 'Preços mais altos', 'value': 'altos'},
+            ],
+            value='baixos',
+            clearable=False,
+            style={'width': '90%'}
+        )
+    ], width=4), # Aqui estava o erro: o width deve estar DENTRO do parêntese da Col
+    
+    dbc.Col([
+        dcc.Dropdown(
+            id='dropdown-anoII',
+            options=[
+                {'label': '2023', 'value': '2023'},
+                {'label': '2024', 'value': '2024'},
+                {'label': '2025', 'value': '2025'},
+            ],
+            value='2023',
+            clearable=False,
+            style={'width': '90%'}
+        )
+    ], width=4), 
+]), # Fechamento da Row
+            dcc.Graph(id='calendar'),
+        ])
 
 
 
@@ -369,6 +406,20 @@ def update_title(tecnologia_selecionada):
     nome_limpo = tecnologia_selecionada.replace(' (kWh)', '')
     
     return f"Evolução Mensal: {nome_limpo}"
+
+@app.callback(
+    Output('calendar', 'figure'),
+    [Input('dropdown-cluster', 'value'),
+    Input('dropdown-anoII', 'value')]
+)
+def update_cluster_price(cluster,ano):
+    if not cluster or not ano:
+        raise dash.exceptions.PreventUpdate
+        
+    ano = int(ano)
+    # Chamamos a tua função de histograma espiral
+    fig = create_cluster_calendar_visualization(cluster,ano)
+    return fig
 
 
 if __name__ == '__main__':
