@@ -46,13 +46,15 @@ def create_correlation_heatmap():
         how="inner"
     )
 
+    rede_distribuicao_col = _find_column(df_corr, "rede", "distribuicao")
+
     cols_corr = [
         "temp_C_mean",
         "wind_speed_mean",
         "precip_mm_sum",
         "mean_cloud",
         "Sunlight (em minutos)",
-        _find_column(df_corr, "rede", "distribuicao"),
+        rede_distribuicao_col,
         _find_column(df_corr, "solar"),
         _find_column(df_corr, "fotovoltaica"),
         _find_column(df_corr, "eolica"),
@@ -66,6 +68,11 @@ def create_correlation_heatmap():
     ]
 
     df_corr = df_corr[cols_corr].copy()
+
+    if rede_distribuicao_col in df_corr.columns:
+        df_corr = df_corr.rename(columns={
+            rede_distribuicao_col: "Total Produção"
+        })
 
     corr_matrix = df_corr.corr(numeric_only=True)
 
