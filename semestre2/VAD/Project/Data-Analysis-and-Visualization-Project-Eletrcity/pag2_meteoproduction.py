@@ -73,9 +73,11 @@ def beautify_figure(fig, title, yaxis_title):
     fig.update_layout(
         title=title,
         template="plotly_white",
-        width=1400,
-        height=500,
-        xaxis_title="Data",
+        width=None, 
+        autosize=True,
+        #width=1400,
+        #height=500,
+        #xaxis_title="Data",
         yaxis_title=yaxis_title,
         title_x=0.5,
         hovermode="x unified",
@@ -158,10 +160,12 @@ def create_meteovsprod(meteo: str, tec: str):
     ))
 
     fig.update_layout(
-        title="Produção Energética vs Condições Meteorológicas",
+        #title="Produção Energética vs Condições Meteorológicas",
         template="plotly_white",
-        width=1400,
-        height=600,
+        width=None, 
+        autosize=True,
+        #width=1400,
+        #height=500,
         title_x=0.5,
         hovermode="x unified",
         xaxis=dict(

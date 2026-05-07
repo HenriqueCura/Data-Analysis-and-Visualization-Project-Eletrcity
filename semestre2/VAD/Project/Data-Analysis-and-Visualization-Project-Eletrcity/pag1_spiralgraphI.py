@@ -47,6 +47,7 @@ def create_spiral_histogram(tec:str):
 
 
     for year in df_spiral['Ano'].unique():
+        """
         temp = df_spiral[df_spiral['Ano'] == year]
         
         cor_do_ano = cores_anos.get(year, "grey")
@@ -62,6 +63,32 @@ def create_spiral_histogram(tec:str):
             thetaunit="degrees",
             marker=dict(color=cor_do_ano),
             
+        ))"""
+        temp = df_spiral[df_spiral['Ano'] == year]
+    
+        # 1. Calcular métricas e formatar strings (podes usar a função format_energy que sugeri antes)
+        v_min = temp['Producao'].min()
+        v_max = temp['Producao'].max()
+        
+        # Criar o nome detalhado para a legenda
+        # .2g é mais amigável que .2e, mas usa o que preferires
+        legend_name=f"<b>Ano {year}</b><br>Mín: {v_min:.2e}<br>Máx: {v_max:.2e}"
+        
+        # Pegar na cor uma única vez
+        cor_do_ano = cores_anos.get(year, "grey")
+
+        # 2. ADICIONAR APENAS UM TRACE POR ANO
+        fig.add_trace(go.Barpolar(
+            r=temp['Producao'] / norm_factor,
+            theta=temp['Mês'] * (360/12), 
+            base=temp['r_base'] * 2,
+            name=legend_name,               # Usamos logo o nome detalhado aqui
+            marker=dict(color=cor_do_ano),
+            customdata=temp['Producao'],
+                hovertemplate="<b>Produção:</b> %{customdata:.3e} kWh<extra></extra>",
+                #<b>Ano: {year}</b><br>" "Mês: %{theta}°<br>"
+            
+            thetaunit="degrees"
         ))
 
     # --- 3. Layout Estilizado (Limpo e Focado na Forma) ---
@@ -97,4 +124,17 @@ def create_spiral_histogram(tec:str):
         width=800,
         margin=dict(b=30, t=80, l=20, r=20),
     )
+    fig.update_layout(
+    legend=dict(
+        orientation="v",       # Vertical para ler melhor os intervalos
+        yanchor="middle",
+        y=0.8,
+        xanchor="left",
+        x=1,                 # Afasta um pouco do gráfico
+        font=dict(size=15),
+        itemsizing='constant',   # Mantém os ícones uniformes
+        itemwidth=30
+    ),
+    margin=dict(r=100)         # Aumenta a margem para a legenda caber
+)
     return fig

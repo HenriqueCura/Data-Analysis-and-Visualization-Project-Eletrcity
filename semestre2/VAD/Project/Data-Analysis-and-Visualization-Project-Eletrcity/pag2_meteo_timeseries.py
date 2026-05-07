@@ -18,15 +18,25 @@ df_hora = df_hora.sort_values("Data")
 def beautify_figure(fig,yaxis_title):
     fig.update_layout(
         template="plotly_white",
-        width=1400,
-        height=500,
-        xaxis_title="Data",
+        #width=1400,
+        #height=600,
+        width=None, 
+        autosize=True,
+        #xaxis_title="Data",
         yaxis_title=yaxis_title,
         title_x=0.5,
         hovermode="x unified",
-        legend_title="Variáveis",
+        #legend_title="Variáveis",
         font=dict(size=14),
-        margin=dict(l=50, r=40, t=70, b=50)
+        margin=dict(l=50, r=40, t=25, b=20),
+        legend=dict(
+            orientation="h",     # "h" de horizontal
+            yanchor="bottom",
+            y=-0.5,              # Posição vertical (abaixo do eixo X e do rangeslider)
+            xanchor="center",
+            x=0.5,
+            traceorder='normal'               # Centrado horizontalmente        # Opcional: remover título da legenda se ocupar muito espaço
+        )
     )
 
     fig.update_xaxes(
@@ -66,13 +76,7 @@ def create_weather_timeseries(tec:str):
     if tec == 'temperatura':
         fig_temp = go.Figure()
 
-        fig_temp.add_trace(go.Scatter(
-            x=df_meteo.index,
-            y=df_meteo["temp_C_mean"],
-            mode="lines",
-            name="Temperatura média",
-            line=dict(color="#5fa8d3", width=3)
-        ))
+        
 
         fig_temp.add_trace(go.Scatter(
             x=df_meteo.index,
@@ -80,6 +84,13 @@ def create_weather_timeseries(tec:str):
             mode="lines",
             name="Temperatura mínima",
             line=dict(color="#9fd3f2", width=2)
+        ))
+        fig_temp.add_trace(go.Scatter(
+            x=df_meteo.index,
+            y=df_meteo["temp_C_mean"],
+            mode="lines",
+            name="Temperatura média",
+            line=dict(color="#5fa8d3", width=3)
         ))
 
         fig_temp.add_trace(go.Scatter(
@@ -99,13 +110,7 @@ def create_weather_timeseries(tec:str):
     elif tec == 'vento':
         fig_wind = go.Figure()
 
-        fig_wind.add_trace(go.Scatter(
-            x=df_meteo.index,
-            y=df_meteo["wind_speed_mean"],
-            mode="lines",
-            name="Vento médio",
-            line=dict(color="#66bb6a", width=3)
-        ))
+       
 
         fig_wind.add_trace(go.Scatter(
             x=df_meteo.index,
@@ -113,6 +118,13 @@ def create_weather_timeseries(tec:str):
             mode="lines",
             name="Vento mínimo",
             line=dict(color="#a5d6a7", width=2)
+        ))
+        fig_wind.add_trace(go.Scatter(
+            x=df_meteo.index,
+            y=df_meteo["wind_speed_mean"],
+            mode="lines",
+            name="Vento médio",
+            line=dict(color="#66bb6a", width=3)
         ))
 
         fig_wind.add_trace(go.Scatter(
@@ -147,13 +159,7 @@ def create_weather_timeseries(tec:str):
     elif tec=='nebulosidade':
         fig_cloud = go.Figure()
 
-        fig_cloud.add_trace(go.Scatter(
-            x=df_meteo.index,
-            y=df_meteo["mean_cloud"],
-            mode="lines",
-            name="Nebulosidade média",
-            line=dict(color="#90a4ae", width=3)
-        ))
+        
 
         fig_cloud.add_trace(go.Scatter(
             x=df_meteo.index,
@@ -161,6 +167,13 @@ def create_weather_timeseries(tec:str):
             mode="lines",
             name="Nebulosidade mínima",
             line=dict(color="#cfd8dc", width=2)
+        ))
+        fig_cloud.add_trace(go.Scatter(
+            x=df_meteo.index,
+            y=df_meteo["mean_cloud"],
+            mode="lines",
+            name="Nebulosidade média",
+            line=dict(color="#90a4ae", width=3)
         ))
 
         fig_cloud.add_trace(go.Scatter(

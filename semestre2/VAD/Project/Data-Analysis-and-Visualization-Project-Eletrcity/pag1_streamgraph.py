@@ -42,7 +42,12 @@ def altair_areaII():
     alt.Chart(df_hora).mark_area().encode(
     alt.X('Data/Hora:T').axis(format='%Y', domain=False, tickSize=0),
     alt.Y('sum(count):Q').stack('center').axis(None),
-    alt.Color('series:N').scale(scheme='category20b')
+    alt.Color('series:N').scale(scheme='category20b').legend(
+            orient='bottom',    # Opções: 'top', 'bottom', 'left', 'right', 'top-left', etc.
+            title='Séries',     # Opcional: mudar o título da legenda
+            columns=4,          # Opcional: se estiver em baixo, podes dividir em colunas
+            offset=20           # Opcional: distância entre o gráfico e a legenda
+        ),
     ).interactive()
 
 
@@ -73,7 +78,13 @@ def altair_areaIII():
         
         # Adicionamos o 'sort' aqui para ordenar pela soma de kWh
 
-        color = alt.Color('Tecnologia:N', legend=alt.Legend(titleFontSize=18, labelFontSize=16)).scale(scheme='inferno').sort(
+        color = alt.Color('Tecnologia:N', legend=alt.Legend(titleFontSize=18, 
+                                                            labelFontSize=16,
+                                                            orient='bottom',    # Opções: 'top', 'bottom', 'left', 'right', 'top-left', etc.
+            title='Tipo de produção',     # Opcional: mudar o título da legenda
+            #columns=4,          # Opcional: se estiver em baixo, podes dividir em colunas
+            offset=5  
+                                                            )).scale(scheme='inferno').sort(
             alt.EncodingSortField(field='kWh', op='sum', order='descending')
         ),
         
@@ -83,6 +94,7 @@ def altair_areaIII():
     ).properties(
         width='container',
         height=500,
+        padding={'bottom': 20}
     ).interactive()
     return chart
 
