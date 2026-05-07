@@ -248,7 +248,7 @@ def _calendar_positions(calendar_df):
     return calendar_df, month_width, month_height, left_pad
 
 
-def _add_calendar_annotations(fig, year, month_width, month_height, left_pad):
+def _add_calendar_annotations(fig, month_width, month_height, left_pad):
     for month_idx, month_name in enumerate(MONTH_NAMES, start=1):
         col = (month_idx - 1) % 3
         row = (month_idx - 1) // 3
@@ -276,16 +276,6 @@ def _add_calendar_annotations(fig, year, month_width, month_height, left_pad):
                 yref="y",
                 xanchor="right"
             )
-
-    fig.add_annotation(
-        x=left_pad + month_width + 2.4,
-        y=2.1,
-        text=str(year),
-        showarrow=False,
-        font=dict(size=16, color="#111111"),
-        xref="x",
-        yref="y"
-    )
 
 
 def _normalize_price_cluster(price_cluster):
@@ -446,16 +436,14 @@ def create_cluster_calendar_visualization(price_cluster="baixos", year=None):
             )
         ), row=1, col=2)
 
-    _add_calendar_annotations(fig, year, month_width, month_height, left_pad)
+    _add_calendar_annotations(fig, month_width, month_height, left_pad)
 
     fig.update_layout(
-        title=f"{selected_label}: calendário e perfil médio de produção",
         template="plotly_white",
         width=1450,
         height=760,
-        title_x=0.5,
         font=dict(size=13),
-        margin=dict(l=50, r=60, t=100, b=60)
+        margin=dict(l=50, r=60, t=70, b=60)
     )
 
     fig.update_xaxes(
@@ -503,5 +491,5 @@ def create_cluster_calendar_visualization(price_cluster="baixos", year=None):
 
 
 if __name__ == "__main__":
-    fig = create_cluster_calendar_visualization(price_cluster="baixos")
+    fig = create_cluster_calendar_visualization(price_cluster="altos", year=2024)
     fig.show()
