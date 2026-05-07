@@ -73,9 +73,11 @@ def beautify_figure(fig, title, yaxis_title):
     fig.update_layout(
         title=title,
         template="plotly_white",
-        width=1400,
-        height=500,
-        xaxis_title="Data",
+        width=None, 
+        autosize=True,
+        #width=1400,
+        #height=500,
+        #xaxis_title="Data",
         yaxis_title=yaxis_title,
         title_x=0.5,
         hovermode="x unified",
@@ -103,15 +105,17 @@ def plot_sunlight(df):
 
     fig.update_layout(
         template="plotly_white",
-        width=1400,
-        height=500,
+        #width=1400,
+        #height=600,
+        width=None, 
+        autosize=True,
         xaxis_title="Data",
         yaxis_title="Minutos de Luz Solar",
         title_x=0.5,
         hovermode="x unified",
         legend_title="Variáveis",
         font=dict(size=14),
-        margin=dict(l=50, r=40, t=70, b=50)
+        margin=dict(l=50, r=40, t=20, b=50)
     )
 
     fig.update_xaxes(
@@ -158,10 +162,12 @@ def create_meteovsprod(meteo: str, tec: str):
     ))
 
     fig.update_layout(
-        title="Produção Energética vs Condições Meteorológicas",
+        #title="Produção Energética vs Condições Meteorológicas",
         template="plotly_white",
-        width=1400,
-        height=600,
+        width=None, 
+        autosize=True,
+        #width=1400,
+        #height=500,
         title_x=0.5,
         hovermode="x unified",
         xaxis=dict(
