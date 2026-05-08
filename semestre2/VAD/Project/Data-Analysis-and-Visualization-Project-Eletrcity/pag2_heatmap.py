@@ -228,13 +228,13 @@ def create_correlation_heatmap():
                     ))
 
     fig.update_layout(
-        title="Matriz de Correlação entre Meteorologia e Produção Energética",
+        #title="Matriz de Correlação entre Meteorologia e Produção Energética",
         template="plotly_white",
         width=1100,
         height=900,
         title_x=0.5,
-        xaxis_title="Variáveis",
-        yaxis_title="Variáveis",
+        #xaxis_title="Variáveis",
+        #yaxis_title="Variáveis",
         font=dict(size=13),
         margin=dict(l=80, r=80, t=90, b=120),
         plot_bgcolor="white"
