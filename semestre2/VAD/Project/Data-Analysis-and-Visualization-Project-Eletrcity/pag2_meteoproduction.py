@@ -4,6 +4,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
+
 df_diarios = pd.read_csv("data/dados_diarios.csv")
 df_hora = pd.read_csv("data/dados_hora.csv")
 
@@ -26,35 +27,87 @@ df_prod_meteo = pd.merge(
     how="inner"
 )
 
+
 def _normalize(text):
     normalized = unicodedata.normalize("NFKD", str(text))
-    return "".join(char for char in normalized if not unicodedata.combining(char)).casefold()
+    return "".join(
+        char for char in normalized
+        if not unicodedata.combining(char)
+    ).casefold()
+
 
 def _find_column(df, *tokens):
     normalized_tokens = [_normalize(token) for token in tokens]
+
     for col in df.columns:
         normalized_col = _normalize(col)
+
         if all(token in normalized_col for token in normalized_tokens):
             return col
+
     return None
+
+
+# =========================
+# CORES DAS TECNOLOGIAS
+# =========================
+
+tecnologias = [
+    "Eólica (kWh)",
+    "Fotovoltaica (kWh)",
+    "Hídrica (kWh)",
+    "Outras Tecnologias (kWh)"
+]
+
+cores = px.colors.qualitative.Set3[:4]
+
+cores_dic = {
+    k: v
+    for k, v in zip(tecnologias, cores)
+}
+
 
 def _build_production_options():
     configs = [
         ("total", "Produção total", ("rede", "distribuicao")),
         ("eolica", "Eólica", ("eolica",)),
         ("fotovoltaica", "Fotovoltaica", ("fotovoltaica",)),
-        ("hidrica", "Hídrica", ("hidrica",))
+        ("hidrica", "Hídrica", ("hidrica",)),
+        ("outras", "Outras Tecnologias", ("outras", "tecnologias"))
     ]
 
     options = {}
+
     for key, label, tokens in configs:
         col = _find_column(df_prod_meteo, *tokens)
+
         if col:
             options[key] = (label, col)
             options[col] = (label, col)
+
     return options
 
+
 producao_cols = _build_production_options()
+
+
+def _get_production_color(tec, prod_label, prod_col):
+    if prod_label == "Produção total":
+        return "#000000"
+
+    if tec in cores_dic:
+        return cores_dic[tec]
+
+    if prod_col in cores_dic:
+        return cores_dic[prod_col]
+
+    label_as_column = f"{prod_label} (kWh)"
+
+    if label_as_column in cores_dic:
+        return cores_dic[label_as_column]
+
+    return "#1f4e79"
+
 
 meteo_cols = {
     "temperatura": ("Temperatura média", "temp_C_mean", "#c62828"),
@@ -65,19 +118,18 @@ meteo_cols = {
 }
 
 meteo_cols = {
-    label: config for label, config in meteo_cols.items()
+    label: config
+    for label, config in meteo_cols.items()
     if config[1] in df_prod_meteo.columns
 }
+
 
 def beautify_figure(fig, title, yaxis_title):
     fig.update_layout(
         title=title,
         template="plotly_white",
-        width=None, 
+        width=None,
         autosize=True,
-        #width=1400,
-        #height=500,
-        #xaxis_title="Data",
         yaxis_title=yaxis_title,
         title_x=0.5,
         hovermode="x unified",
@@ -92,22 +144,23 @@ def beautify_figure(fig, title, yaxis_title):
     )
 
     fig.update_yaxes(showgrid=True)
+
     return fig
+
 
 def plot_sunlight(df):
     fig = px.line(
         df,
         x=df.index,
         y="Sunlight (em minutos)",
-        #title="Luz Solar Diária",
-        labels={"Sunlight (em minutos)": "Minutos de Luz Solar"}
+        labels={
+            "Sunlight (em minutos)": "Minutos de Luz Solar"
+        }
     )
 
     fig.update_layout(
         template="plotly_white",
-        #width=1400,
-        #height=600,
-        width=None, 
+        width=None,
         autosize=True,
         xaxis_title="Data",
         yaxis_title="Minutos de Luz Solar",
@@ -127,17 +180,29 @@ def plot_sunlight(df):
         showgrid=True,
         range=[0, df["Sunlight (em minutos)"].max() + 30]
     )
+
     return fig
 
 
 def create_meteovsprod(meteo: str, tec: str):
     if meteo not in meteo_cols:
-        raise ValueError(f"Valor meteorológico incorreto. Deve ser um de {list(meteo_cols)}")
-    if tec not in producao_cols:
-        raise ValueError(f"Tecnologia incorreta. Deve ser uma de {list(producao_cols)}")
+        raise ValueError(
+            f"Valor meteorológico incorreto. Deve ser um de {list(meteo_cols)}"
+        )
 
-    meteo_label, meteo_col, _ = meteo_cols[meteo]
+    if tec not in producao_cols:
+        raise ValueError(
+            f"Tecnologia incorreta. Deve ser uma de {list(producao_cols)}"
+        )
+
+    meteo_label, meteo_col, meteo_color = meteo_cols[meteo]
     prod_label, prod_col = producao_cols[tec]
+
+    prod_color = _get_production_color(
+        tec=tec,
+        prod_label=prod_label,
+        prod_col=prod_col
+    )
 
     fig = go.Figure()
 
@@ -148,7 +213,10 @@ def create_meteovsprod(meteo: str, tec: str):
         mode="lines",
         yaxis="y1",
         opacity=0.75,
-        line=dict(color="#1f4e79", width=2)
+        line=dict(
+            color=prod_color,
+            width=2
+        )
     ))
 
     fig.add_trace(go.Scatter(
@@ -158,16 +226,16 @@ def create_meteovsprod(meteo: str, tec: str):
         mode="lines",
         yaxis="y2",
         opacity=0.75,
-        line=dict(color="#c62828", width=2)
+        line=dict(
+            color=meteo_color,
+            width=2
+        )
     ))
 
     fig.update_layout(
-        #title="Produção Energética vs Condições Meteorológicas",
         template="plotly_white",
-        width=None, 
+        width=None,
         autosize=True,
-        #width=1400,
-        #height=500,
         title_x=0.5,
         hovermode="x unified",
         xaxis=dict(
@@ -192,4 +260,9 @@ def create_meteovsprod(meteo: str, tec: str):
         ),
         margin=dict(l=60, r=90, t=90, b=80)
     )
+
     return fig
+
+if __name__ == "__main__":
+    fig = create_meteovsprod("vento", "hidrica")
+    fig.show()
