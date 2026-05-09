@@ -222,7 +222,7 @@ dbc.Container([
                             ], width=4)
                         ], className="g-2") # 'g-2' para espaçamento horizontal entre os dropdowns
                     ], style={'marginBottom': '20px'}),
-                    
+                    html.H5(id='aviso-falta', style={'textAlign': 'left', 'fontSize': '16px','italic':'True'}),
                     dcc.Graph(id='area_graph')
                 ])
             ], style={'minHeight': '800px'}, color="secondary", outline=True)
@@ -362,7 +362,17 @@ def update_circular_graph(tecnologia_escolhida):
     fig = create_spiral_histogram(tecnologia_escolhida)
 
     return fig
-    
+@app.callback(
+    Output('aviso-falta', 'children'),
+    [Input('dropdown-mes', 'value'),
+     Input('dropdown-intervalo', 'value'),
+     Input('radio-ano', 'value')]
+)
+def print_aviso(mes_escolhido, _,ano_escolhido):
+    # Remove o '(kWh)' apenas para o título ficar mais limpo visualmente
+    if int(mes_escolhido) == 10 and int(ano_escolhido) == 2025:
+        return "AVISO: Este mês tem valores em falta. Particular atenção para o dia 14 que tem mais de 95% em falta! "
+   
 
 @app.callback(
     Output('area_graph', 'figure'),
