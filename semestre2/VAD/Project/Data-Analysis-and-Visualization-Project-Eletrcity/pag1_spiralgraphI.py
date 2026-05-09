@@ -2,7 +2,9 @@ import numpy as np
 import plotly.graph_objects as go
 import pandas as pd
 
+
 dfIII = pd.read_csv('data/dados_producao_mesano.csv')
+
 
 
 def create_spiral_histogram(tec:str):

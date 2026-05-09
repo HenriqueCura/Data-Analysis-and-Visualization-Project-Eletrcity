@@ -29,9 +29,25 @@ def create_price_timeseries():
     ))
 
     fig.update_layout(
-        title="Evolução do Preço da Eletricidade",
+        #title="Evolução do Preço da Eletricidade",
         xaxis_title="Data",
         yaxis_title="Preço (€/MWh)",
         template="plotly_white"
     )
+    fig.update_layout(
+    legend=dict(
+        orientation="h",     # Define a orientação como Horizontal
+        yanchor="bottom",    # Ancora a legenda pela parte de baixo
+        y=-0.3,              # Posição vertical (valores negativos empurram para baixo do eixo X)
+        xanchor="center",    # Ancora a legenda pelo centro horizontal
+        x=0.5,               # Posiciona no centro do gráfico (0 a 1)
+        font=dict(
+            family="Arial",      # Opcional: mudar a fonte
+            size=14,             # Aumenta aqui o tamanho (ex: 18 ou 20)
+            color="black"        # Cor do texto
+        ),),
+    # Aumentar a margem inferior para a legenda não ser cortada
+    margin=dict(b=100,r=20) 
+)
+
     return fig

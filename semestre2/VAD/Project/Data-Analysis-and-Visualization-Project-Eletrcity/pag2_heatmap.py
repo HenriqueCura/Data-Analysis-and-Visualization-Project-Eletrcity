@@ -236,7 +236,7 @@ def create_correlation_heatmap():
         #xaxis_title="Variáveis",
         #yaxis_title="Variáveis",
         font=dict(size=13),
-        margin=dict(l=80, r=80, t=90, b=120),
+        margin=dict(l=80, r=80, t=40, b=120),
         plot_bgcolor="white"
     )
 

@@ -1,5 +1,6 @@
 import pandas as pd
 from plotly import express as px
+import numpy as np
 
 
 
@@ -20,7 +21,9 @@ df_new = df_hora.melt(
 dfIII = df_new.groupby(by=[df_new['Ano'],df_new['Mês'],df_new['Tecnologia']]).sum().reset_index()
 
 dfIII['Ano'] = dfIII['Ano'].astype(str)
+dfIII = dfIII.sort_values(['Ano', 'Mês'])
 dfIII['Mes/Ano'] = dfIII['Mês'].astype(str) + '/' + dfIII['Ano'].astype(str)
+dfIII['Mes/AnoII'] = dfIII['Mês'].astype(str) + '/' + dfIII['Ano'].astype(str)
 
 def circular_total():
     r = "Producao"
@@ -35,9 +38,13 @@ def circular_total():
         theta="Mes/Ano",
         color="Tecnologia",
         labels="Ano",
-        color_discrete_sequence=px.colors.qualitative.Set3).update_layout(
-        showlegend=True,
-        coloraxis_showscale=False,
+        
+        color_discrete_sequence=
+        px.colors.qualitative.Set3).update_layout(
+            barmode="stack",
+            showlegend=True,
+            coloraxis_showscale=False,
+            
         legend=dict(
             title="Ano de Produção",
             font=dict(size=12),
@@ -73,6 +80,17 @@ def circular_total():
         
         height=700,
         width=800,
-        margin=dict(b=30, t=80, l=100, r=60),
+        margin=dict(b=30, t=80, l=120, r=50),
+        )
+    for trace in fig.data:
+    # Filtramos o dataframe apenas para a tecnologia deste trace
+        tec_name = trace.name
+        dados_focados = dfIII[dfIII['Tecnologia'] == tec_name]
+        
+        trace.customdata = dados_focados[['Mes/AnoII']]
+        trace.hovertemplate = (
+            "<b>Tecnologia:</b> %{fullData.name}<br>" +
+            "<b>Data:</b> %{customdata[0]}<br>" +
+            "<b>Produção:</b> %{r:.2e} kWh<extra></extra>"
         )
     return fig

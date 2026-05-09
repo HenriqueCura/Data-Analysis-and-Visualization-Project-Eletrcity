@@ -55,5 +55,21 @@ def area_month_year_interval(month:int,year:int,interval:str):
 )
     fig = px.area(df_new, x="Hora", y="Producao", color="Tecnologia", 
                    
-                  color_discrete_sequence=["#14FDA4", "#D6D30B", "#2375F0","grey"])
+                  color_discrete_sequence=px.colors.qualitative.Set3) 
+    fig.update_layout(
+    height=600,  # Altura em pixéis
+    width=850    # Largura em pixéis (podes remover para ser responsivo)
+)
+    fig.update_layout(
+    legend=dict(
+        orientation="h",     # Define a orientação como Horizontal
+        yanchor="bottom",    # Ancora a legenda pela parte de baixo
+        y=-0.3,              # Posição vertical (valores negativos empurram para baixo do eixo X)
+        xanchor="center",    # Ancora a legenda pelo centro horizontal
+        x=0.5,               # Posiciona no centro do gráfico (0 a 1)
+        title_text=""        # Opcional: remove o título "Tecnologia" para poupar espaço vertical
+    ),
+    # Aumentar a margem inferior para a legenda não ser cortada
+    margin=dict(b=100,r=20) 
+)
     return fig

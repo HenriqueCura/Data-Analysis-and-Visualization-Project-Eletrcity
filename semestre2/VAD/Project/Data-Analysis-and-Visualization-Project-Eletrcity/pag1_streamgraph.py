@@ -63,6 +63,9 @@ def altair_areaIII():
         value_name='kWh'
     )
 
+    cores = px.colors.qualitative.Set3[:4] 
+    color_scale = alt.Scale(domain=tecnologias, range=cores)
+
     # 3. Criar o gráfico
     chart = alt.Chart(df_long).mark_area().encode(
         x = alt.X('yearmonth(Data/Hora):T').axis(format='%b %Y', titleFontSize=16,   # Tamanho do título "Período Horário"
@@ -77,14 +80,12 @@ def altair_areaIII():
       
         
         # Adicionamos o 'sort' aqui para ordenar pela soma de kWh
-
         color = alt.Color('Tecnologia:N', legend=alt.Legend(titleFontSize=18, 
                                                             labelFontSize=16,
                                                             orient='bottom',    # Opções: 'top', 'bottom', 'left', 'right', 'top-left', etc.
             title='Tipo de produção',     # Opcional: mudar o título da legenda
             #columns=4,          # Opcional: se estiver em baixo, podes dividir em colunas
-            offset=5  
-                                                            )).scale(scheme='inferno').sort(
+            offset=5)).scale(color_scale).sort(
             alt.EncodingSortField(field='kWh', op='sum', order='descending')
         ),
         
