@@ -64,7 +64,6 @@ PRICE_CONFIG = {
 }
 
 dropdown_options_preco_meteo = [
-    {"label": "Todas as condicoes", "value": "todas"},
     {"label": "Temperatura media", "value": "temperatura"},
     {"label": "Precipitacao", "value": "precipitacao"},
     {"label": "Nebulosidade media", "value": "nebulosidade"},
@@ -75,37 +74,26 @@ dropdown_options_preco_meteo = [
 
 def _normalize_key(value):
     if value is None:
-        return "todas"
+        return "temperatura"
 
     value = str(value).strip().casefold()
-
-    if value in {"todas", "todos", "all"}:
-        return "todas"
 
     for key, config in METEO_CONFIGS.items():
         if value == key or value in config["aliases"]:
             return key
 
-    valid_values = ["todas"] + list(METEO_CONFIGS)
+    valid_values = list(METEO_CONFIGS)
     raise ValueError(f"Condicao invalida. Usa uma de: {valid_values}")
 
 
-def _available_configs(condition):
+def _selected_meteo_config(condition):
     condition = _normalize_key(condition)
-
-    if condition == "todas":
-        return [PRICE_CONFIG] + [
-            config
-            for config in METEO_CONFIGS.values()
-            if config["column"] in df_diarios.columns
-        ]
-
     config = METEO_CONFIGS[condition]
 
     if config["column"] not in df_diarios.columns:
         raise ValueError(f"A coluna {config['column']} nao existe nos dados.")
 
-    return [PRICE_CONFIG, config]
+    return config
 
 
 def _scale_0_1(series):
@@ -118,9 +106,10 @@ def _scale_0_1(series):
     return (series - min_value) / (max_value - min_value)
 
 
-def _prepare_stream_data(condition="todas", rolling_window=7):
-    configs = _available_configs(condition)
-    cols = ["Data"] + [config["column"] for config in configs]
+def _prepare_mirror_data(condition="temperatura", rolling_window=7):
+    meteo_config = _selected_meteo_config(condition)
+    configs = [PRICE_CONFIG, meteo_config]
+    cols = ["Data", PRICE_CONFIG["column"], meteo_config["column"]]
 
     stream_df = df_diarios[cols].dropna().copy()
 
@@ -137,69 +126,94 @@ def _prepare_stream_data(condition="todas", rolling_window=7):
                 .mean()
             )
 
-    scaled_cols = [f"{config['column']}_scaled" for config in configs]
-    total = stream_df[scaled_cols].sum(axis=1)
-    baseline = -total / 2
+    stream_df["Preco_normalizado"] = stream_df[f"{PRICE_CONFIG['column']}_scaled"]
+    stream_df["Meteo_normalizado"] = -stream_df[f"{meteo_config['column']}_scaled"]
 
-    layers = []
-    cumulative = baseline.copy()
-
-    for config in configs:
-        scaled_col = f"{config['column']}_scaled"
-        lower = cumulative.copy()
-        upper = cumulative + stream_df[scaled_col]
-
-        layers.append({
-            "config": config,
-            "lower": lower,
-            "upper": upper
-        })
-
-        cumulative = upper
-
-    return stream_df, layers
+    return stream_df, meteo_config
 
 
-def create_preco_meteocond_streamgraph(condicao="todas", rolling_window=7):
-    stream_df, layers = _prepare_stream_data(
+def create_preco_meteocond_streamgraph(condicao="temperatura", rolling_window=7):
+    stream_df, meteo_config = _prepare_mirror_data(
         condition=condicao,
         rolling_window=rolling_window
     )
 
     fig = go.Figure()
+    price_col = PRICE_CONFIG["column"]
+    meteo_col = meteo_config["column"]
 
-    for layer in layers:
-        config = layer["config"]
-        col = config["column"]
-        lower_name = f"{col}_lower"
+    fig.add_trace(go.Scatter(
+        x=stream_df["Data"],
+        y=stream_df["Preco_normalizado"],
+        mode="lines",
+        fill="tozeroy",
+        fillcolor="rgba(142, 27, 27, 0.72)",
+        line=dict(
+            color=PRICE_CONFIG["color"],
+            width=1.3,
+            shape="spline",
+            smoothing=1.1
+        ),
+        name=PRICE_CONFIG["label"],
+        customdata=stream_df[[price_col]].to_numpy(),
+        hovertemplate=(
+            f"{PRICE_CONFIG['label']}"
+            "<br>Data: %{x|%Y-%m-%d}"
+            f"<br>Valor real: %{{customdata[0]:.2f}} {PRICE_CONFIG['unit']}"
+            "<extra></extra>"
+        )
+    ))
 
-        fig.add_trace(go.Scatter(
-            x=stream_df["Data"],
-            y=layer["lower"],
-            mode="lines",
-            line=dict(width=0, color="rgba(0,0,0,0)"),
-            hoverinfo="skip",
-            showlegend=False,
-            name=lower_name
-        ))
+    fig.add_trace(go.Scatter(
+        x=stream_df["Data"],
+        y=stream_df["Meteo_normalizado"],
+        mode="lines",
+        fill="tozeroy",
+        fillcolor=meteo_config["color"],
+        line=dict(
+            color=meteo_config["color"],
+            width=1.3,
+            shape="spline",
+            smoothing=1.1
+        ),
+        opacity=0.72,
+        name=meteo_config["label"],
+        customdata=stream_df[[meteo_col]].to_numpy(),
+        hovertemplate=(
+            f"{meteo_config['label']}"
+            "<br>Data: %{x|%Y-%m-%d}"
+            f"<br>Valor real: %{{customdata[0]:.2f}} {meteo_config['unit']}"
+            "<extra></extra>"
+        )
+    ))
 
-        fig.add_trace(go.Scatter(
-            x=stream_df["Data"],
-            y=layer["upper"],
-            mode="lines",
-            fill="tonexty",
-            fillcolor=config["color"],
-            line=dict(color=config["color"], width=0.8),
-            opacity=0.72,
-            name=config["label"],
-            customdata=stream_df[[col]].to_numpy(),
-            hovertemplate=(
-                f"{config['label']}"
-                "<br>Data: %{x|%Y-%m-%d}"
-                f"<br>Valor real: %{{customdata[0]:.2f}} {config['unit']}"
-                "<extra></extra>"
-            )
-        ))
+    fig.add_hline(
+        y=0,
+        line_width=1.2,
+        line_color="#2F3A45"
+    )
+
+    fig.add_annotation(
+        x=0.01,
+        y=0.96,
+        xref="paper",
+        yref="paper",
+        text="Preco",
+        showarrow=False,
+        font=dict(size=13, color=PRICE_CONFIG["color"]),
+        xanchor="left"
+    )
+
+    fig.add_annotation(
+        x=0.01,
+        y=0.04,
+        xref="paper",
+        yref="paper",
+        text=meteo_config["label"],
+        showarrow=False,
+        font=dict(size=13, color=meteo_config["color"]),
+        xanchor="left"
+    )
 
     fig.update_layout(
         template="plotly_white",
@@ -209,7 +223,7 @@ def create_preco_meteocond_streamgraph(condicao="todas", rolling_window=7):
         title_x=0.5,
         hovermode="x unified",
         xaxis_title="Data",
-        yaxis_title="Valor normalizado",
+        yaxis_title="Valor normalizado espelhado",
         legend_title="Variaveis",
         font=dict(size=14),
         margin=dict(l=55, r=35, t=45, b=95),
@@ -229,22 +243,24 @@ def create_preco_meteocond_streamgraph(condicao="todas", rolling_window=7):
 
     fig.update_yaxes(
         showgrid=False,
-        zeroline=True,
-        zerolinecolor="#BFC7CE",
-        showticklabels=False
+        zeroline=False,
+        range=[-1.05, 1.05],
+        tickmode="array",
+        tickvals=[-1, -0.5, 0, 0.5, 1],
+        ticktext=["alto", "", "0", "", "alto"]
     )
 
     return fig
 
 
-def create_price_weather_streamgraph(condicao="todas", rolling_window=7):
+def create_price_weather_streamgraph(condicao="temperatura", rolling_window=7):
     return create_preco_meteocond_streamgraph(
         condicao=condicao,
         rolling_window=rolling_window
     )
 
 
-def create_streamgraph_preco_meteocond(condicao="todas", rolling_window=7):
+def create_streamgraph_preco_meteocond(condicao="temperatura", rolling_window=7):
     return create_preco_meteocond_streamgraph(
         condicao=condicao,
         rolling_window=rolling_window
@@ -252,5 +268,5 @@ def create_streamgraph_preco_meteocond(condicao="todas", rolling_window=7):
 
 
 if __name__ == "__main__":
-    fig = create_preco_meteocond_streamgraph("todas")
+    fig = create_preco_meteocond_streamgraph("temperatura")
     fig.show()
