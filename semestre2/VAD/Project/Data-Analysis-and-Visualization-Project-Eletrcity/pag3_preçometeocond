@@ -23,35 +23,35 @@ METEO_CONFIGS = {
         "label": "Temperatura media",
         "column": "temp_C_mean",
         "unit": "C",
-        "color": "#D95F02",
+        "color": "#5fa8d3",
         "aliases": ("temp", "temperatura", "temperature")
     },
     "precipitacao": {
         "label": "Precipitacao",
         "column": "precip_mm_sum",
         "unit": "mm",
-        "color": "#1F78B4",
+        "color": "#1565c0",
         "aliases": ("precip", "precipitacao", "precipitation")
     },
     "nebulosidade": {
         "label": "Nebulosidade media",
         "column": "mean_cloud",
         "unit": "%",
-        "color": "#6C757D",
+        "color": "#90a4ae",
         "aliases": ("cloud", "nuvens", "nebulosidade")
     },
     "luz": {
         "label": "Luz solar",
         "column": "Sunlight (em minutos)",
         "unit": "min",
-        "color": "#F2B705",
+        "color": "#f9a825",
         "aliases": ("luz", "sunlight", "solar")
     },
     "vento": {
         "label": "Vento medio",
         "column": "wind_speed_mean",
         "unit": "m/s",
-        "color": "#2A9D8F",
+        "color": "#66bb6a",
         "aliases": ("vento", "wind", "wind_speed")
     }
 }
@@ -60,7 +60,7 @@ PRICE_CONFIG = {
     "label": "Preco medio diario",
     "column": PRICE_COL,
     "unit": "EUR/MWh",
-    "color": "#8E1B1B"
+    "color": "#c62828"
 }
 
 dropdown_options_preco_meteo = [
@@ -147,7 +147,7 @@ def create_preco_meteocond_streamgraph(condicao="temperatura", rolling_window=7)
         y=stream_df["Preco_normalizado"],
         mode="lines",
         fill="tozeroy",
-        fillcolor="rgba(142, 27, 27, 0.72)",
+        fillcolor="rgba(198, 40, 40, 0.72)",
         line=dict(
             color=PRICE_CONFIG["color"],
             width=1.3,
