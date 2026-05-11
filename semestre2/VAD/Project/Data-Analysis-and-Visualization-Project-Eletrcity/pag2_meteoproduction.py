@@ -135,7 +135,7 @@ def beautify_figure(fig, title, yaxis_title):
         hovermode="x unified",
         legend_title="Variáveis",
         font=dict(size=14),
-        margin=dict(l=50, r=40, t=70, b=50)
+        margin=dict(l=50, r=40, t=0, b=50)
     )
 
     fig.update_xaxes(
@@ -256,9 +256,12 @@ def create_meteovsprod(meteo: str, tec: str):
         ),
         legend=dict(
             orientation="h",
-            y=-0.3
+            y=-0.4,
+            itemclick=False,
+            itemdoubleclick=False
         ),
-        margin=dict(l=60, r=90, t=90, b=80)
+        margin=dict(l=60, r=90, t=10, b=80),
+
     )
 
     return fig

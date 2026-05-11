@@ -1,5 +1,6 @@
 import pandas as pd
 from plotly import express as px
+from plotly import graph_objects as go
 import numpy as np
 
 
@@ -82,6 +83,28 @@ def circular_total():
         width=800,
         margin=dict(b=30, t=80, l=120, r=50),
         )
+    max_r = dfIII[r].max()
+    for i in range(-1,len(dfIII) - 1):
+        ano_atual = dfIII.iloc[i]['Ano']
+        ano_proximo = dfIII.iloc[i+1]['Ano']
+        
+        if ano_atual != ano_proximo:
+            # Pegamos no nome da categoria atual (Dezembro) 
+            # e na categoria seguinte (Janeiro)
+            cat_dez = dfIII.iloc[i]['Mes/Ano']
+            cat_jan = dfIII.iloc[i+1]['Mes/Ano']
+            
+            # Adicionamos a linha usando os nomes das categorias
+            # O Plotly desenha a linha na transição entre estas duas
+            fig.add_trace(go.Scatterpolar(
+                r=[0, max_r * 1.1],
+                # Usar a categoria de Janeiro como ponto de referência
+                theta=[cat_jan, cat_jan], 
+                mode='lines',
+                line=dict(color='black', width=2, dash='dash'),
+                hoverinfo='none',
+                showlegend=False
+            ))
     for trace in fig.data:
     # Filtramos o dataframe apenas para a tecnologia deste trace
         tec_name = trace.name

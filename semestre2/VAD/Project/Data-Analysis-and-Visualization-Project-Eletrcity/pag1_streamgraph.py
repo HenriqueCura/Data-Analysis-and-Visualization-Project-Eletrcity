@@ -80,7 +80,7 @@ def altair_areaIII():
       
         
         # Adicionamos o 'sort' aqui para ordenar pela soma de kWh
-        color = alt.Color('Tecnologia:N', legend=alt.Legend(titleFontSize=18, 
+        color = alt.Color('Tecnologia:N', legend=alt.Legend(titleFontSize=16, 
                                                             labelFontSize=16,
                                                             orient='bottom',    # Opções: 'top', 'bottom', 'left', 'right', 'top-left', etc.
             title='Tipo de produção',     # Opcional: mudar o título da legenda

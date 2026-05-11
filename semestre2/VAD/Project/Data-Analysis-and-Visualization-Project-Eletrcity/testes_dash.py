@@ -34,7 +34,7 @@ app.layout = html.Div([
     # --- BARRA DE TOPO ---
     html.Div([
         # Título do Dashboard
-        html.H3("Energia PT", style={
+        html.H3("Energia em Portugal", style={
             'display': 'inline-block', 
             'margin': '0 40px 0 0', 
             'verticalAlign': 'middle',
@@ -45,17 +45,17 @@ app.layout = html.Div([
         html.Div([
             dcc.Tabs(id="tabs-menu", value='tab-1', children=[
                 dcc.Tab(label='Sazonalidade', value='tab-1', 
-                        style={'padding': '25px'},  # espaço para o limite superior
-                        selected_style={'padding': '40px'}),  # espaço para o limite superior quanfo é a tab selecionada
+                        style={'padding': '15px'},  # espaço para o limite superior
+                        selected_style={'padding': '25px'}),  # espaço para o limite superior quanfo é a tab selecionada
                 
-                dcc.Tab(label='Condições meteorológicas', value='tab-2', 
+                dcc.Tab(label='Meteorologia', value='tab-2', 
                         style={'padding': '15px'}, 
                         selected_style={'padding': '25px'}),
                 
                 dcc.Tab(label='Preço', value='tab-3', 
-                        style={'padding': '25px'}, 
-                        selected_style={'padding': '40px'}),
-            ], style={'height': '90px','width':'600px'}) # tamanhos de cada tab
+                        style={'padding': '15px'}, 
+                        selected_style={'padding': '25px'}),
+            ], style={'height': '60px','width':'500px'}) # tamanhos de cada tab
         ], style={'display': 'inline-block', 'verticalAlign': 'middle'})
         
     ], style={
@@ -79,8 +79,7 @@ app.layout = html.Div([
 
 def render_content(tab):
     if tab == 'tab-1':
-        return html.Div([html.H1('Sazonalidade na produção energética em Portugal', style={'textAlign': 'center'}),
-                         html.H4(),
+        return html.Div([html.H1('Sazonalidade na produção energética em Portugal', style={'textAlign': 'left'}),
                         html.H4('Evolução da produção energética discriminada por tipo em Portugal'),
                          # title=f"Evolução da produção energética em {dic_month[month]} de {year}"
                          dvc.Vega(id='streamgraph_prods', spec=streamgraph.to_dict(format='vega'),
@@ -163,7 +162,7 @@ dbc.Container([
                             style={'width': '60%'} # Aumentado ligeiramente para melhor leitura no card
                         ),
                     ], style={'marginBottom': '20px'}),
-                    html.H6('(coloque o cursor por cima de cada barra para descobrir o valor da produção)'),
+                    html.H6('(coloque o cursor por cima de cada barra para descobrir o valor da produção)',style={'fontWeight': 'normal'}),
                     dcc.Graph(
                         id='spiral',
                         config={'displayModeBar': False}
@@ -256,7 +255,7 @@ dbc.Container([
                     dbc.Col([
                         dcc.Dropdown(
                     id='dropdown-meteoII',
-                    className="mb-4",
+                    #className="mb-4",
                     options=[
                         {'label': 'Luz diária de sol','value':'sunlight'},
                         {'label': 'Temperatura', 'value': 'temperatura'},
@@ -284,7 +283,7 @@ dbc.Container([
                     style={'width': '90%'} # Ajustado para preencher a coluna
                 ),
                     ], width=2),
-            ], style={'marginBottom': '0px','marginTop':'0px'}),
+            ], style={'marginBottom': '0px','marginTop':'20px'}),
             #html.H4("Fator meteorológico vs produção"),
             dcc.Graph(id='meteovsprod',style={'width': '100%', 'height': '600px'}),
             
