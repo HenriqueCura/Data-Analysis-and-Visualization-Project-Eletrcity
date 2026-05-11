@@ -69,10 +69,18 @@ def create_correlation_heatmap():
 
     df_corr = df_corr[cols_corr].copy()
 
+    rename_columns = {
+        "temp_C_mean": "Temperatura média",
+        "wind_speed_mean": "Velocidade do vento",
+        "precip_mm_sum": "Precipitação",
+        "mean_cloud": "Nebulosidade média",
+        "Sunlight (em minutos)": "Luz solar"
+    }
+
     if rede_distribuicao_col in df_corr.columns:
-        df_corr = df_corr.rename(columns={
-            rede_distribuicao_col: "Total Produção"
-        })
+        rename_columns[rede_distribuicao_col] = "Total Produção"
+
+    df_corr = df_corr.rename(columns=rename_columns)
 
     corr_matrix = df_corr.corr(numeric_only=True)
 
@@ -228,13 +236,10 @@ def create_correlation_heatmap():
                     ))
 
     fig.update_layout(
-        #title="Matriz de Correlação entre Meteorologia e Produção Energética",
         template="plotly_white",
         width=1100,
         height=900,
         title_x=0.5,
-        #xaxis_title="Variáveis",
-        #yaxis_title="Variáveis",
         font=dict(size=13),
         margin=dict(l=80, r=80, t=40, b=120),
         plot_bgcolor="white"
@@ -260,3 +265,7 @@ def create_correlation_heatmap():
     )
 
     return fig
+
+if __name__ == "__main__":
+    fig = create_correlation_heatmap()
+    fig.show()  

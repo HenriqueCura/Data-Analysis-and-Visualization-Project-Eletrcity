@@ -48,25 +48,6 @@ def _find_column(df, *tokens):
     return None
 
 
-# =========================
-# CORES DAS TECNOLOGIAS
-# =========================
-
-tecnologias = [
-    "Eólica (kWh)",
-    "Fotovoltaica (kWh)",
-    "Hídrica (kWh)",
-    "Outras Tecnologias (kWh)"
-]
-
-cores = px.colors.qualitative.Set3[:4]
-
-cores_dic = {
-    k: v
-    for k, v in zip(tecnologias, cores)
-}
-
-
 def _build_production_options():
     configs = [
         ("total", "Produção total", ("rede", "distribuicao")),
@@ -91,30 +72,12 @@ def _build_production_options():
 producao_cols = _build_production_options()
 
 
-def _get_production_color(tec, prod_label, prod_col):
-    if prod_label == "Produção total":
-        return "#000000"
-
-    if tec in cores_dic:
-        return cores_dic[tec]
-
-    if prod_col in cores_dic:
-        return cores_dic[prod_col]
-
-    label_as_column = f"{prod_label} (kWh)"
-
-    if label_as_column in cores_dic:
-        return cores_dic[label_as_column]
-
-    return "#1f4e79"
-
-
 meteo_cols = {
-    "temperatura": ("Temperatura média", "temp_C_mean", "#c62828"),
-    "vento": ("Velocidade do vento", "wind_speed_mean", "#66bb6a"),
-    "precipitacao": ("Precipitação", "precip_mm_sum", "#1565c0"),
-    "nebulosidade": ("Nebulosidade média", "mean_cloud", "#90a4ae"),
-    "sunlight": ("Luz solar", "Sunlight (em minutos)", "#f9a825")
+    "temperatura": ("Temperatura média", "temp_C_mean"),
+    "vento": ("Velocidade do vento", "wind_speed_mean"),
+    "precipitacao": ("Precipitação", "precip_mm_sum"),
+    "nebulosidade": ("Nebulosidade média", "mean_cloud"),
+    "sunlight": ("Luz solar", "Sunlight (em minutos)")
 }
 
 meteo_cols = {
@@ -195,14 +158,8 @@ def create_meteovsprod(meteo: str, tec: str):
             f"Tecnologia incorreta. Deve ser uma de {list(producao_cols)}"
         )
 
-    meteo_label, meteo_col, meteo_color = meteo_cols[meteo]
+    meteo_label, meteo_col = meteo_cols[meteo]
     prod_label, prod_col = producao_cols[tec]
-
-    prod_color = _get_production_color(
-        tec=tec,
-        prod_label=prod_label,
-        prod_col=prod_col
-    )
 
     fig = go.Figure()
 
@@ -212,10 +169,10 @@ def create_meteovsprod(meteo: str, tec: str):
         name=prod_label,
         mode="lines",
         yaxis="y1",
-        opacity=0.75,
+        opacity=0.65,
         line=dict(
-            color=prod_color,
-            width=2
+            color="#1f4e79",
+            width=1.7
         )
     ))
 
@@ -225,10 +182,10 @@ def create_meteovsprod(meteo: str, tec: str):
         name=meteo_label,
         mode="lines",
         yaxis="y2",
-        opacity=0.75,
+        opacity=0.65,
         line=dict(
-            color=meteo_color,
-            width=2
+            color="#c62828",
+            width=1.7
         )
     ))
 
@@ -265,6 +222,7 @@ def create_meteovsprod(meteo: str, tec: str):
     )
 
     return fig
+
 
 if __name__ == "__main__":
     fig = create_meteovsprod("vento", "hidrica")
