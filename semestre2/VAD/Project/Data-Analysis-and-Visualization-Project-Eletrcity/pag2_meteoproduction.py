@@ -28,6 +28,16 @@ df_prod_meteo = pd.merge(
 )
 
 
+# =========================
+# CORES FIXAS DO GRÁFICO
+# =========================
+
+PRODUCTION_COLOR = "#1f4e79"
+METEO_COLOR = "#c62828"
+LINE_WIDTH = 1.7
+LINE_OPACITY = 0.65
+
+
 def _normalize(text):
     normalized = unicodedata.normalize("NFKD", str(text))
     return "".join(
@@ -163,29 +173,31 @@ def create_meteovsprod(meteo: str, tec: str):
 
     fig = go.Figure()
 
+    # Linha da produção: sempre azul
     fig.add_trace(go.Scatter(
         x=df_prod_meteo["Data"],
         y=df_prod_meteo[prod_col],
         name=prod_label,
         mode="lines",
         yaxis="y1",
-        opacity=0.65,
+        opacity=LINE_OPACITY,
         line=dict(
-            color="#1f4e79",
-            width=1.7
+            color=PRODUCTION_COLOR,
+            width=LINE_WIDTH
         )
     ))
 
+    # Linha meteorológica: sempre vermelha
     fig.add_trace(go.Scatter(
         x=df_prod_meteo["Data"],
         y=df_prod_meteo[meteo_col],
         name=meteo_label,
         mode="lines",
         yaxis="y2",
-        opacity=0.65,
+        opacity=LINE_OPACITY,
         line=dict(
-            color="#c62828",
-            width=1.7
+            color=METEO_COLOR,
+            width=LINE_WIDTH
         )
     ))
 
@@ -217,8 +229,7 @@ def create_meteovsprod(meteo: str, tec: str):
             itemclick=False,
             itemdoubleclick=False
         ),
-        margin=dict(l=60, r=90, t=10, b=80),
-
+        margin=dict(l=60, r=90, t=10, b=80)
     )
 
     return fig
