@@ -29,11 +29,28 @@ df_prod_meteo = pd.merge(
 
 
 # =========================
-# CORES FIXAS DO GRÁFICO
+# CORES DO GRÁFICO POR DROPDOWN
 # =========================
 
-PRODUCTION_COLOR = "#1f4e79"
-METEO_COLOR = "#c62828"
+DEFAULT_PRODUCTION_COLOR = "#1f4e79"
+DEFAULT_METEO_COLOR = "#c62828"
+
+PRODUCTION_COLORS = {
+    "total": "#1f4e79",
+    "eolica": "#2e7d32",
+    "fotovoltaica": "#f9a825",
+    "hidrica": "#0277bd",
+    "outras": "#6a1b9a"
+}
+
+METEO_COLORS = {
+    "temperatura": "#ef6c00",
+    "vento": "#00897b",
+    "precipitacao": "#1565c0",
+    "nebulosidade": "#757575",
+    "sunlight": "#fdd835"
+}
+
 LINE_WIDTH = 1.7
 LINE_OPACITY = 0.65
 
@@ -80,6 +97,20 @@ def _build_production_options():
 
 
 producao_cols = _build_production_options()
+
+
+def _build_production_color_options():
+    colors = {}
+
+    for key, (_, col) in producao_cols.items():
+        if key in PRODUCTION_COLORS:
+            colors[key] = PRODUCTION_COLORS[key]
+            colors[col] = PRODUCTION_COLORS[key]
+
+    return colors
+
+
+producao_cores = _build_production_color_options()
 
 
 meteo_cols = {
@@ -170,10 +201,12 @@ def create_meteovsprod(meteo: str, tec: str):
 
     meteo_label, meteo_col = meteo_cols[meteo]
     prod_label, prod_col = producao_cols[tec]
+    prod_color = producao_cores.get(tec, DEFAULT_PRODUCTION_COLOR)
+    meteo_color = METEO_COLORS.get(meteo, DEFAULT_METEO_COLOR)
 
     fig = go.Figure()
 
-    # Linha da produção: sempre azul
+    # Linha da produção: muda de cor consoante a tecnologia escolhida
     fig.add_trace(go.Scatter(
         x=df_prod_meteo["Data"],
         y=df_prod_meteo[prod_col],
@@ -182,12 +215,12 @@ def create_meteovsprod(meteo: str, tec: str):
         yaxis="y1",
         opacity=LINE_OPACITY,
         line=dict(
-            color=PRODUCTION_COLOR,
+            color=prod_color,
             width=LINE_WIDTH
         )
     ))
 
-    # Linha meteorológica: sempre vermelha
+    # Linha meteorológica: muda de cor consoante o fator escolhido
     fig.add_trace(go.Scatter(
         x=df_prod_meteo["Data"],
         y=df_prod_meteo[meteo_col],
@@ -196,7 +229,7 @@ def create_meteovsprod(meteo: str, tec: str):
         yaxis="y2",
         opacity=LINE_OPACITY,
         line=dict(
-            color=METEO_COLOR,
+            color=meteo_color,
             width=LINE_WIDTH
         )
     ))
@@ -236,5 +269,5 @@ def create_meteovsprod(meteo: str, tec: str):
 
 
 if __name__ == "__main__":
-    fig = create_meteovsprod("vento", "hidrica")
+    fig = create_meteovsprod("vento", "eolica")
     fig.show()
