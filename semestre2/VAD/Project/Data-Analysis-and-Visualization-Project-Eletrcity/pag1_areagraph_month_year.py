@@ -60,13 +60,36 @@ def area_month_year_interval(month:int,year:int,interval:str):
     height=600,  # Altura em pixéis
     width=850    # Largura em pixéis (podes remover para ser responsivo)
 )
+    if month==10 or month==3:
+        fig.update_layout(
+    annotations=[
+        dict(
+            x=0.1,            # Posição horizontal
+            y=0.9,            # Posição vertical
+            xref="paper",     # Referência ao contentor total
+            yref="paper",
+            text="Pico ocorre em dia de alteração da hora", # O teu texto
+            showarrow=False,  # Define se queres uma seta a apontar para algo
+            font=dict(
+                family="Arial",
+                size=16,
+                color="black"
+            ),
+            align="center",
+            bgcolor="rgba(255,255,255,0.5)", # Fundo preto com 50% de transparência
+            bordercolor="grey",
+            borderwidth=2,
+            borderpad=10,      # Espaçamento interno entre texto e borda
+        )
+    ]
+)
     fig.update_layout(
     legend=dict(
         orientation="h",     # Define a orientação como Horizontal
         yanchor="bottom",    # Ancora a legenda pela parte de baixo
         y=-0.3,              # Posição vertical (valores negativos empurram para baixo do eixo X)
-        xanchor="center",    # Ancora a legenda pelo centro horizontal
-        x=0.5,               # Posiciona no centro do gráfico (0 a 1)
+        xanchor="left",    # Ancora a legenda pelo centro horizontal
+        x=0,               # Posiciona no centro do gráfico (0 a 1)
         title_text=""        # Opcional: remove o título "Tecnologia" para poupar espaço vertical
     ),
     # Aumentar a margem inferior para a legenda não ser cortada

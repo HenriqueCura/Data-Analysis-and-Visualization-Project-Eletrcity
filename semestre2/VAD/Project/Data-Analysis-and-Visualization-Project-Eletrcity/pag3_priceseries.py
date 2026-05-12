@@ -39,8 +39,8 @@ def create_price_timeseries():
         orientation="h",     # Define a orientação como Horizontal
         yanchor="bottom",    # Ancora a legenda pela parte de baixo
         y=-0.3,              # Posição vertical (valores negativos empurram para baixo do eixo X)
-        xanchor="center",    # Ancora a legenda pelo centro horizontal
-        x=0.5,               # Posiciona no centro do gráfico (0 a 1)
+        xanchor="left",    # Ancora a legenda pelo centro horizontal
+        x=0,               # Posiciona no centro do gráfico (0 a 1)
         font=dict(
             family="Arial",      # Opcional: mudar a fonte
             size=14,             # Aumenta aqui o tamanho (ex: 18 ou 20)

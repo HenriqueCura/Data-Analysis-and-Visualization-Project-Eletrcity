@@ -10,6 +10,7 @@ from pag2_meteo_timeseries import create_weather_timeseries
 from pag2_heatmap import create_correlation_heatmap
 from pag2_meteoproduction import create_meteovsprod
 from pag3_priceseries import create_price_timeseries
+from pag3_precometeocond import create_preco_meteocond_streamgraph
 from pag3_calendarbased import create_cluster_calendar_visualization
 import altair as alt
 import dash_bootstrap_components as dbc
@@ -31,44 +32,50 @@ calendar = create_cluster_calendar_visualization()
 
 
 app.layout = html.Div([
-    # --- BARRA DE TOPO ---
+    # --- BARRA DE TOPO (Fixa no topo) ---
     html.Div([
         # Título do Dashboard
         html.H3("Energia em Portugal", style={
-            'display': 'inline-block', 
             'margin': '0 40px 0 0', 
-            'verticalAlign': 'middle',
-            'fontFamily': 'Arial'
+            'fontFamily': 'Arial',
+            'whiteSpace': 'nowrap' # Garante que o título não quebra linha
         }),
         
         # Contentor das Tabs
         html.Div([
             dcc.Tabs(id="tabs-menu", value='tab-1', children=[
                 dcc.Tab(label='Sazonalidade', value='tab-1', 
-                        style={'padding': '15px'},  # espaço para o limite superior
-                        selected_style={'padding': '25px'}),  # espaço para o limite superior quanfo é a tab selecionada
+                        style={'padding': '15px'}, 
+                        selected_style={'padding': '15px', 'fontWeight': 'bold'}),
                 
                 dcc.Tab(label='Meteorologia', value='tab-2', 
                         style={'padding': '15px'}, 
-                        selected_style={'padding': '25px'}),
+                        selected_style={'padding': '15px', 'fontWeight': 'bold'}),
                 
                 dcc.Tab(label='Preço', value='tab-3', 
                         style={'padding': '15px'}, 
-                        selected_style={'padding': '25px'}),
-            ], style={'height': '60px','width':'500px'}) # tamanhos de cada tab
-        ], style={'display': 'inline-block', 'verticalAlign': 'middle'})
-        
+                        selected_style={'padding': '15px', 'fontWeight': 'bold'}),
+            ], style={'height': '50px', 'width': '500px'})
+        ])
     ], style={
-        'padding': '25px 40px', # espaço dos tabs para os lados (cima e baixo Y esquerda e direita)
+        'padding': '10px 40px',
         'backgroundColor': 'white', 
-        'borderBottom': '1px solid #ddd', # espaço de uma barra de fronteira cinzenta 
+        'borderBottom': '1px solid #ddd',
         'display': 'flex',        
-        'alignItems': 'center'    
+        'alignItems': 'center',
+        'position': 'sticky', # Opcional: mantém a barra no topo ao fazer scroll
+        'top': '0',
+        'zIndex': '1000'
     }),
-
-    # --- CONTEÚDO ---
-    # Este Div será preenchido pela callback 'render_content'
-    html.Div(id='tabs-content', style={'padding': '40px'}),
+#["graph","cube","circle","dot","default"]
+    # --- CONTEÚDO E SPINNER (Fora da barra de topo) ---
+    dcc.Loading(
+        id="loading-tabs",
+        type="cube", # "graph" é mais elegante para dashboards
+        fullscreen=True, # True se quiseres que tape o ecrã todo
+        children=html.Div(id='tabs-content', style={'padding': '40px'}),
+        color="#119DFF",
+    )
 ])
 
 # quando se clica em cada tab
@@ -98,7 +105,7 @@ dbc.Container([
                         style={'height': '500px', 'width': '100%'}
                     )
                 ], style={'overflow': 'hidden'})
-            ], style={'minHeight': '773px'}, color="secondary", outline=True)
+            ], style={'minHeight': '772px'}, color="secondary", outline=True)
         ], width=6), # Largura 6 para ocupar metade
 
         # --- GRÁFICO DA DIREITA (Detalhado com Dropdown) ---
@@ -119,7 +126,7 @@ dbc.Container([
                             ],
                             value='Eólica (kWh)',
                             clearable=False,
-                            style={'width': '60%'} # No card, 100% da largura da coluna pequena é melhor
+                            style={'width': '40%'} # No card, 100% da largura da coluna pequena é melhor
                         ),
                     ], style={'marginBottom': '15px'}),
 
@@ -159,7 +166,7 @@ dbc.Container([
                             ],
                             value='total',
                             clearable=False,
-                            style={'width': '60%'} # Aumentado ligeiramente para melhor leitura no card
+                            style={'width': '40%'} # Aumentado ligeiramente para melhor leitura no card
                         ),
                     ], style={'marginBottom': '20px'}),
                     html.H6('(coloque o cursor por cima de cada barra para descobrir o valor da produção)',style={'fontWeight': 'normal'}),
@@ -175,7 +182,7 @@ dbc.Container([
         dbc.Col([
             dbc.Card([
                 dbc.CardBody([
-                    html.H4("Evolução Mensal da Produção de Energia em Portugal", className="card-title"),
+                    html.H4("Evolução num mês da Produção de Energia em Portugal", className="card-title"),
                     
                     # Zona de Filtros dentro do Card
                     html.Div([
@@ -224,14 +231,15 @@ dbc.Container([
                     html.H5(id='aviso-falta', style={'textAlign': 'left', 'fontSize': '16px','italic':'True'}),
                     dcc.Graph(id='area_graph')
                 ])
-            ], style={'minHeight': '800px'}, color="secondary", outline=True)
+            ], style={'minHeight': '825px'}, color="secondary", outline=True)
         ], width=6)
     ])
 ], fluid=True, style={'marginTop': '20px'})
 ]       
 )
     elif tab == 'tab-2':
-        return html.Div([html.H4("Condições meteorológicas em Portugal"),
+        return html.Div([html.H1('Condições meteorológicas em Portugal e a sua influência na produção energética', style={'textAlign': 'left'}),
+                html.H4("Condições meteorológicas em Portugal"),
                          html.Label("Selecione o dado meteorológico:"),
                 dcc.Dropdown(
                     id='dropdown-meteoI',
@@ -244,7 +252,7 @@ dbc.Container([
                     ],
                     value='temperatura',
                     clearable=False,
-                    style={'width': '30%'} # Ajustado para preencher a coluna
+                    style={'width': '20%'} # Ajustado para preencher a coluna
                 ),
             dcc.Graph(id='timeseries_tempo',style={'width': '100%', 'height': '600px'}),
             html.H4("Correlações entre as diferentes produções e fatores meteorológicos"),
@@ -297,8 +305,28 @@ dbc.Container([
                          ])
     elif tab == 'tab-3':
         return html.Div([
-            html.H4("Menu de análise dos preços da eletricidade"),
+            html.H1('Preço da eletricidade ', style={'textAlign': 'left'}),
+            html.H4("Evolução do preço da eletricidade"),
             dcc.Graph(id='grafico-precos', figure=precos),
+            html.H4('Comparação de condição meteorológica selecionado e preço da energia'),
+            dcc.Dropdown(
+                    id='dropdown-meteoIII',
+                    #className="mb-4",
+                    options=[
+                        {'label': 'Luz diária de sol','value':'sunlight'},
+                        {'label': 'Temperatura', 'value': 'temperatura'},
+                        {'label': 'Velocidade do vento', 'value': 'vento'},
+                        {'label': 'Precipitação diária (em mm)', 'value': 'precipitacao'},
+                        {'label': 'Nebulosidade', 'value': 'nebulosidade'}
+                    ],
+                    value='temperatura',
+                    clearable=False,
+                    style={'width': '20%'} ),
+            dcc.Graph(id='meteovspreco'),
+            
+
+            
+
             dbc.Row([
     html.H4('Agrupamento dos preços para o ano selecionado'),
     dbc.Col([
@@ -313,7 +341,7 @@ dbc.Container([
             clearable=False,
             style={'width': '90%'}
         )
-    ], width=4), # Aqui estava o erro: o width deve estar DENTRO do parêntese da Col
+    ], width=2), # Aqui estava o erro: o width deve estar DENTRO do parêntese da Col
     
     dbc.Col([
         dcc.Dropdown(
@@ -325,9 +353,9 @@ dbc.Container([
             ],
             value='2023',
             clearable=False,
-            style={'width': '90%'}
+            style={'width': '60%'}
         )
-    ], width=4), 
+    ], width=2), 
 ]), # Fechamento da Row
             dcc.Graph(id='calendar'),
         ])
@@ -444,6 +472,18 @@ def update_cluster_price(cluster,ano):
     ano = int(ano)
     # Chamamos a tua função de histograma espiral
     fig = create_cluster_calendar_visualization(cluster,ano)
+    return fig
+
+@app.callback(
+    Output('meteovspreco', 'figure'),
+    Input('dropdown-meteoIII', 'value')
+)
+def update_meteovspreco(meteo_escolhido):
+    if not meteo_escolhido:
+        raise dash.exceptions.PreventUpdate
+        
+    # Chamamos a tua função de histograma espiral
+    fig = create_preco_meteocond_streamgraph(meteo_escolhido)
     return fig
 
 

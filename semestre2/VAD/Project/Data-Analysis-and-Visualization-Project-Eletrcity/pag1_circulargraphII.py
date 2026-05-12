@@ -19,6 +19,7 @@ dfII['Ano'] = dfII['Ano'].astype(str)
 dfII = dfII.sort_values(['Ano', 'Mês'])
 dfII['Mes/Ano'] = dfII['Mês'].astype(str) + '/' + dfII['Ano'].astype(str)
 dfII['Mes/AnoII'] = dfII['Mês'].astype(str) + '/' + dfII['Ano'].astype(str)
+dfII = dfII.iloc[:-2,:]
 anos_legend= list(dfII.apply(
     lambda x: str(x['Ano']) if x['Mês'] == 6 else "", axis=1
 ))
@@ -44,7 +45,6 @@ def create_circular_histogram(tec:str):
     r = tec
     if r not in dfII.columns:
         raise ValueError(f"Tecnologia '{r}' não encontrada. Opções: {dfII.columns[2:-1].tolist()}")
-    anos_legend[-1] = "2026"
     n_anos = dfII['Ano'].nunique()
     cores = [ajustar_intensidade(cor,1-(f*0.3)) for f in range(n_anos)]
     fig = px.bar_polar(

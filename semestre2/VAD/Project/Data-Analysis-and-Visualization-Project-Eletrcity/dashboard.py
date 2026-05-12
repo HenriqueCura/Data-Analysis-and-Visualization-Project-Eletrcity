@@ -10,6 +10,7 @@ from pag2_meteo_timeseries import create_weather_timeseries
 from pag2_heatmap import create_correlation_heatmap
 from pag2_meteoproduction import create_meteovsprod
 from pag3_priceseries import create_price_timeseries
+from pag3_precometeocond import create_preco_meteocond_streamgraph
 from pag3_calendarbased import create_cluster_calendar_visualization
 import altair as alt
 import dash_bootstrap_components as dbc
@@ -34,7 +35,7 @@ app.layout = html.Div([
     # --- BARRA DE TOPO ---
     html.Div([
         # Título do Dashboard
-        html.H3("Energia PT", style={
+        html.H3("Energia em Portugal", style={
             'display': 'inline-block', 
             'margin': '0 40px 0 0', 
             'verticalAlign': 'middle',
@@ -45,17 +46,17 @@ app.layout = html.Div([
         html.Div([
             dcc.Tabs(id="tabs-menu", value='tab-1', children=[
                 dcc.Tab(label='Sazonalidade', value='tab-1', 
-                        style={'padding': '25px'},  # espaço para o limite superior
-                        selected_style={'padding': '40px'}),  # espaço para o limite superior quanfo é a tab selecionada
+                        style={'padding': '15px'},  # espaço para o limite superior
+                        selected_style={'padding': '25px'}),  # espaço para o limite superior quanfo é a tab selecionada
                 
-                dcc.Tab(label='Condições meteorológicas', value='tab-2', 
+                dcc.Tab(label='Meteorologia', value='tab-2', 
                         style={'padding': '15px'}, 
                         selected_style={'padding': '25px'}),
                 
                 dcc.Tab(label='Preço', value='tab-3', 
-                        style={'padding': '25px'}, 
-                        selected_style={'padding': '40px'}),
-            ], style={'height': '90px','width':'600px'}) # tamanhos de cada tab
+                        style={'padding': '15px'}, 
+                        selected_style={'padding': '25px'}),
+            ], style={'height': '60px','width':'500px'}) # tamanhos de cada tab
         ], style={'display': 'inline-block', 'verticalAlign': 'middle'})
         
     ], style={
@@ -79,144 +80,160 @@ app.layout = html.Div([
 
 def render_content(tab):
     if tab == 'tab-1':
-        return html.Div([html.H1('Sazonalidade na produção energética em Portugal', style={'textAlign': 'center'}),
-                         html.H4(),
+        return html.Div([html.H1('Sazonalidade na produção energética em Portugal', style={'textAlign': 'left'}),
                         html.H4('Evolução da produção energética discriminada por tipo em Portugal'),
                          # title=f"Evolução da produção energética em {dic_month[month]} de {year}"
                          dvc.Vega(id='streamgraph_prods', spec=streamgraph.to_dict(format='vega'),
                                   opt={'actions': False} ),          # Desativa o menu de exportação e ver código), # gráfico streamgraph das produções
-    dbc.Container([ # container para poder colocar dois gráficos lado a lado
-    dbc.Row([
-        dbc.Col([
-            #title=f"Evolução Mensal da Produção de Energia: {r}",
-            html.H4("Evolução Mensal por Tecnologia de produção"),
-            dcc.Graph(
-                id='grafico-circular-geral',
-                figure=circularI # gráfico carregado em cima
-            )
-        ], width=6), # Ocupa metade do ecrã
-
-        dbc.Col([
-            
-            # title=f"Evolução Mensal da Produção de Energia: {r}",
-            
-            # Dropdown para selecionar a tecnologia do gráfico da direita
-            html.Div([
-                html.Label("Selecione a Tecnologia:"),
-                dcc.Dropdown(
-                    id='dropdown-tecnologia', # id para se usar no callback
-                    options=[  # opções para o dropdown
-                        {'label': 'Eólica', 'value': 'Eólica (kWh)'},
-                        {'label': 'Fotovoltaica', 'value': 'Fotovoltaica (kWh)'},
-                        {'label': 'Hídrica', 'value': 'Hídrica (kWh)'}
-                    ],
-                    value='Eólica (kWh)', # valor default selecionado
-                    clearable=False,
-                    style={
-                'width': '40%' # tamanho da barra, diminuido para não ocupar muito espaço com palavras pequenas
-            }
-                ),
-            ], style={'marginBottom': '25px'}), # espaço para baixo do dropdown
-            html.H4(id='titulo-evolucao', style={'textAlign': 'left'}),
-            #html.H4(f"Evolução Mensal por {dropdown-tecnologia}", style={'textAlign': 'left'}),
-            # Espaço para o gráfico detalhado
-            dcc.Graph(id='grafico_tec'),
-            
-        ])
-    ])
-], fluid=True),
 dbc.Container([
     dbc.Row([
-        # --- COLUNA ESQUERDA ---
+        # --- GRÁFICO DA ESQUERDA (Geral) ---
         dbc.Col([
-            html.Div([
-                html.H4("Spiral Histogram: Evolução da produção selecionada"),
-                html.Label("Selecione a Tecnologia:"),
-                dcc.Dropdown(
-                    id='dropdown-tecnologiaII',
-                    options=[
-                        {'label': 'Total das produções','value':'total'},
-                        {'label': 'Eólica', 'value': 'Eólica (kWh)'},
-                        {'label': 'Fotovoltaica', 'value': 'Fotovoltaica (kWh)'},
-                        {'label': 'Hídrica', 'value': 'Hídrica (kWh)'}
-                    ],
-                    value='total',
-                    clearable=False,
-                    style={'width': '40%'} # Ajustado para preencher a coluna
-                ),
-            ], style={'marginBottom': '20px'}),
-            #title=
-            
-            dcc.Graph(id='spiral',config={
-        'displayModeBar': False,  # Esconde a toolbar permanentemente
-    }),
+            dbc.Card([
+                dbc.CardBody([
+                    html.H4("Evolução Mensal por Tecnologia de produção", className="card-title"),
+                    dcc.Graph(
+                        id='grafico-circular-geral',
+                        figure=circularI,
+                        config={'displayModeBar': False},
+                        style={'height': '500px', 'width': '100%'}
+                    )
+                ], style={'overflow': 'hidden'})
+            ], style={'minHeight': '772px'}, color="secondary", outline=True)
+        ], width=6), # Largura 6 para ocupar metade
+
+        # --- GRÁFICO DA DIREITA (Detalhado com Dropdown) ---
+        dbc.Col([
+            dbc.Card([
+                dbc.CardBody([
+                    html.H4("Análise Detalhada por Tecnologia", className="card-title"),
+                    
+                    # Colocamos o dropdown dentro do cartão para ficar organizado
+                    html.Div([
+                        html.Label("Selecione a Tecnologia:"),
+                        dcc.Dropdown(
+                            id='dropdown-tecnologia',
+                            options=[
+                                {'label': 'Eólica', 'value': 'Eólica (kWh)'},
+                                {'label': 'Fotovoltaica', 'value': 'Fotovoltaica (kWh)'},
+                                {'label': 'Hídrica', 'value': 'Hídrica (kWh)'}
+                            ],
+                            value='Eólica (kWh)',
+                            clearable=False,
+                            style={'width': '40%'} # No card, 100% da largura da coluna pequena é melhor
+                        ),
+                    ], style={'marginBottom': '15px'}),
+
+                    html.H4(id='titulo-evolucao', style={'textAlign': 'left', 'fontSize': '16px'}),
+                    
+                    dcc.Graph(
+                        id='grafico_tec',
+                        config={'displayModeBar': False},
+                        style={
+        'width': '80%',       # Define uma largura menor que 100%
+        'marginLeft': 'auto', # Margem automática à esquerda
+        'marginRight': 'auto' # Margem automática à direita
+    }
+                    )
+                ])
+            ], color="secondary", outline=True)
+        ], width=6) # Largura 6 para ocupar a outra metade
+    ])
+], fluid=True, style={'marginTop': '20px'}),
+dbc.Container([
+    dbc.Row([
+        # --- COLUNA ESQUERDA (Spiral Histogram) ---
+        dbc.Col([
+            dbc.Card([
+                dbc.CardBody([
+                    html.H4("Comparação de cada mês para um tipo de produção", className="card-title"),
+                    
+                    html.Div([
+                        html.Label("Selecione a Tecnologia:"),
+                        dcc.Dropdown(
+                            id='dropdown-tecnologiaII',
+                            options=[
+                                {'label': 'Total das produções','value':'total'},
+                                {'label': 'Eólica', 'value': 'Eólica (kWh)'},
+                                {'label': 'Fotovoltaica', 'value': 'Fotovoltaica (kWh)'},
+                                {'label': 'Hídrica', 'value': 'Hídrica (kWh)'}
+                            ],
+                            value='total',
+                            clearable=False,
+                            style={'width': '40%'} # Aumentado ligeiramente para melhor leitura no card
+                        ),
+                    ], style={'marginBottom': '20px'}),
+                    html.H6('(coloque o cursor por cima de cada barra para descobrir o valor da produção)',style={'fontWeight': 'normal'}),
+                    dcc.Graph(
+                        id='spiral',
+                        config={'displayModeBar': False}
+                    ),
+                ])
+            ], color="secondary", outline=True)
         ], width=6),
 
-        # --- COLUNA DIREITA ---
+        # --- COLUNA DIREITA (Evolução Mensal / Filtros) ---
         dbc.Col([
-            html.H4("Evolução Mensal da Produção de Energia em Portugal"),
-            
-            # Zona de Filtros
-            html.Div([
-                html.Label("Filtros de Data e Intervalo:"),
-                dbc.Row([
-                    # Mês
-                    dbc.Col([
-                        dcc.Dropdown(
-                            id='dropdown-mes',
-                            options=[{'label': m.capitalize(), 'value': str(i+1)} 
-                                     for i, m in enumerate(['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'])],
-                            value='1',
-                            placeholder="Mês"
-                        )
-                    ], width=4),
+            dbc.Card([
+                dbc.CardBody([
+                    html.H4("Evolução Mensal da Produção de Energia em Portugal", className="card-title"),
+                    
+                    # Zona de Filtros dentro do Card
+                    html.Div([
+                        html.Label("Filtros de Data e Intervalo:"),
+                        dbc.Row([
+                            # Mês
+                            dbc.Col([
+                                dcc.Dropdown(
+                                    id='dropdown-mes',
+                                    options=[{'label': m.capitalize(), 'value': str(i+1)} 
+                                             for i, m in enumerate(['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'])],
+                                    value='1',
+                                    placeholder="Mês"
+                                )
+                            ], width=4),
 
-                    # Ano
-                    dbc.Col([
-                        dcc.Dropdown(
-                            id='radio-ano',
-                            options=[{'label': '2023', 'value': '2023'},
-                                {'label': '2024', 'value': '2024'},
-                                {'label': '2025', 'value': '2025'},],
-                            value='2023',
-                            clearable=False,
-                        )
-                    ], width=4),
+                            # Ano
+                            dbc.Col([
+                                dcc.Dropdown(
+                                    id='radio-ano',
+                                    options=[{'label': '2023', 'value': '2023'},
+                                             {'label': '2024', 'value': '2024'},
+                                             {'label': '2025', 'value': '2025'}],
+                                    value='2023',
+                                    clearable=False,
+                                )
+                            ], width=4),
 
-                    # Intervalo
-                    dbc.Col([
-                        
-                        dcc.Dropdown(
-                            id='dropdown-intervalo',
-                            options=[
-                                {'label': '15 min', 'value': '15m'},
-                                {'label': '1 hora', 'value': '1h'},
-                                {'label': '4 horas', 'value': '4h'},
-                                {'label': '12 horas', 'value': '12h'},
-                                {'label': '1 dia', 'value': '1d'},
-                            ],
-                            value='15m',
-                            clearable=False,
-                        )
-                    ], width=4)
-                ], className="g-12") # 'g-2' adiciona um pequeno espaçamento entre colunas
-            ], style={'marginBottom': '20px'}),
-
-             # Título principal
-            #"subtitle": "Distribuição horária por tecnologia", # Subtítulo opcional
-            #"fontSize": 30,
-            #"anchor": "middle", # Alinha o título à esquerda
-            #"color": "black
-            # Gráfico de Área
-            dcc.Graph(id='area_graph')
-            
+                            # Intervalo
+                            dbc.Col([
+                                dcc.Dropdown(
+                                    id='dropdown-intervalo',
+                                    options=[
+                                        {'label': '15 min', 'value': '15m'},
+                                        {'label': '1 hora', 'value': '1h'},
+                                        {'label': '4 horas', 'value': '4h'},
+                                        {'label': '12 horas', 'value': '12h'},
+                                        {'label': '1 dia', 'value': '1d'},
+                                    ],
+                                    value='15m',
+                                    clearable=False,
+                                )
+                            ], width=4)
+                        ], className="g-2") # 'g-2' para espaçamento horizontal entre os dropdowns
+                    ], style={'marginBottom': '20px'}),
+                    html.H5(id='aviso-falta', style={'textAlign': 'left', 'fontSize': '16px','italic':'True'}),
+                    dcc.Graph(id='area_graph')
+                ])
+            ], style={'minHeight': '825px'}, color="secondary", outline=True)
         ], width=6)
     ])
-], fluid=True)
+], fluid=True, style={'marginTop': '20px'})
 ]       
 )
     elif tab == 'tab-2':
-        return html.Div([html.H4("Condições meteorológicas em Portugal"),
+        return html.Div([html.H1('Condições meteorológicas em Portugal e a sua influência na produção energética', style={'textAlign': 'left'}),
+                html.H4("Condições meteorológicas em Portugal"),
                          html.Label("Selecione o dado meteorológico:"),
                 dcc.Dropdown(
                     id='dropdown-meteoI',
@@ -229,18 +246,18 @@ dbc.Container([
                     ],
                     value='temperatura',
                     clearable=False,
-                    style={'width': '30%'} # Ajustado para preencher a coluna
+                    style={'width': '20%'} # Ajustado para preencher a coluna
                 ),
             dcc.Graph(id='timeseries_tempo',style={'width': '100%', 'height': '600px'}),
             html.H4("Correlações entre as diferentes produções e fatores meteorológicos"),
-            dcc.Graph(id='heatmap', figure=heatmap ,style={'width': '100%', 'height': '700px'},config={'displayModeBar': False,}),
-            html.H4("Fator meteorológico vs produção"),
+            dcc.Graph(id='heatmap', figure=heatmap ,style={'width': '100%', 'height': '900px'},config={'displayModeBar': False,}),
+            html.H4("Comparar fator meteorológico com tipo de produção"),
             dbc.Row([
                     # Mês
                     dbc.Col([
                         dcc.Dropdown(
                     id='dropdown-meteoII',
-                    className="mb-4",
+                    #className="mb-4",
                     options=[
                         {'label': 'Luz diária de sol','value':'sunlight'},
                         {'label': 'Temperatura', 'value': 'temperatura'},
@@ -268,8 +285,8 @@ dbc.Container([
                     style={'width': '90%'} # Ajustado para preencher a coluna
                 ),
                     ], width=2),
-            ], style={'marginBottom': '0px','marginTop':'250px'}),
-            
+            ], style={'marginBottom': '0px','marginTop':'20px'}),
+            #html.H4("Fator meteorológico vs produção"),
             dcc.Graph(id='meteovsprod',style={'width': '100%', 'height': '600px'}),
             
             
@@ -282,8 +299,28 @@ dbc.Container([
                          ])
     elif tab == 'tab-3':
         return html.Div([
+            html.H1('Preço da eletricidade ', style={'textAlign': 'left'}),
             html.H4("Menu de análise dos preços da eletricidade"),
             dcc.Graph(id='grafico-precos', figure=precos),
+            html.H4('Comparação de condição meteorológica selecionado e preço da energia'),
+            dcc.Dropdown(
+                    id='dropdown-meteoIII',
+                    #className="mb-4",
+                    options=[
+                        {'label': 'Luz diária de sol','value':'sunlight'},
+                        {'label': 'Temperatura', 'value': 'temperatura'},
+                        {'label': 'Velocidade do vento', 'value': 'vento'},
+                        {'label': 'Precipitação diária (em mm)', 'value': 'precipitacao'},
+                        {'label': 'Nebulosidade', 'value': 'nebulosidade'}
+                    ],
+                    value='temperatura',
+                    clearable=False,
+                    style={'width': '20%'} ),
+            dcc.Graph(id='meteovspreco'),
+            
+
+            
+
             dbc.Row([
     html.H4('Agrupamento dos preços para o ano selecionado'),
     dbc.Col([
@@ -298,7 +335,7 @@ dbc.Container([
             clearable=False,
             style={'width': '90%'}
         )
-    ], width=4), # Aqui estava o erro: o width deve estar DENTRO do parêntese da Col
+    ], width=2), # Aqui estava o erro: o width deve estar DENTRO do parêntese da Col
     
     dbc.Col([
         dcc.Dropdown(
@@ -310,9 +347,9 @@ dbc.Container([
             ],
             value='2023',
             clearable=False,
-            style={'width': '90%'}
+            style={'width': '60%'}
         )
-    ], width=4), 
+    ], width=2), 
 ]), # Fechamento da Row
             dcc.Graph(id='calendar'),
         ])
@@ -346,7 +383,17 @@ def update_circular_graph(tecnologia_escolhida):
     fig = create_spiral_histogram(tecnologia_escolhida)
 
     return fig
-    
+@app.callback(
+    Output('aviso-falta', 'children'),
+    [Input('dropdown-mes', 'value'),
+     Input('dropdown-intervalo', 'value'),
+     Input('radio-ano', 'value')]
+)
+def print_aviso(mes_escolhido, _,ano_escolhido):
+    # Remove o '(kWh)' apenas para o título ficar mais limpo visualmente
+    if int(mes_escolhido) == 10 and int(ano_escolhido) == 2025:
+        return "AVISO: Este mês tem valores em falta. Particular atenção para o dia 14 que tem mais de 95% em falta! "
+   
 
 @app.callback(
     Output('area_graph', 'figure'),
@@ -419,6 +466,18 @@ def update_cluster_price(cluster,ano):
     ano = int(ano)
     # Chamamos a tua função de histograma espiral
     fig = create_cluster_calendar_visualization(cluster,ano)
+    return fig
+
+@app.callback(
+    Output('meteovspreco', 'figure'),
+    Input('dropdown-meteoIII', 'value')
+)
+def update_meteovspreco(meteo_escolhido):
+    if not meteo_escolhido:
+        raise dash.exceptions.PreventUpdate
+        
+    # Chamamos a tua função de histograma espiral
+    fig = create_preco_meteocond_streamgraph(meteo_escolhido)
     return fig
 
 

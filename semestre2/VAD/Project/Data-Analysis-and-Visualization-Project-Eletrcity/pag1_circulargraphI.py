@@ -25,14 +25,21 @@ dfIII['Ano'] = dfIII['Ano'].astype(str)
 dfIII = dfIII.sort_values(['Ano', 'Mês'])
 dfIII['Mes/Ano'] = dfIII['Mês'].astype(str) + '/' + dfIII['Ano'].astype(str)
 dfIII['Mes/AnoII'] = dfIII['Mês'].astype(str) + '/' + dfIII['Ano'].astype(str)
+dfIII = dfIII.iloc[:-10,:]
 
 def circular_total():
     r = "Producao"
     meses = dict(zip(range(1,13), ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']))
+    
     anos_legend= list(dfIII.apply(
         lambda x: meses[x['Mês']]+ "/" + x['Ano'] if x['Mês'] %2 != 0 else "", axis=1
     ))
-    anos_legend[-1] = "2026"
+    anos_legend = [
+    f"{a.split('/')[0]}/<b>{a.split('/')[1]}</b>" if '/' in a and 'Jan' in a 
+    else a 
+    for a in anos_legend
+]
+    
     fig = px.bar_polar(
         dfIII,
         r= r,
@@ -65,7 +72,7 @@ def circular_total():
                     ticktext=anos_legend,
                     direction="clockwise",
                     rotation=90,
-                    tickfont=dict(size=18, family='Arial', style='italic')
+                    tickfont=dict(size=18, family='Arial')
             ),  
             radialaxis=dict(
                 showticklabels=True, 
@@ -101,7 +108,7 @@ def circular_total():
                 # Usar a categoria de Janeiro como ponto de referência
                 theta=[cat_jan, cat_jan], 
                 mode='lines',
-                line=dict(color='black', width=2, dash='dash'),
+                line=dict(color='grey', width=2, dash='dash'),
                 hoverinfo='none',
                 showlegend=False
             ))
