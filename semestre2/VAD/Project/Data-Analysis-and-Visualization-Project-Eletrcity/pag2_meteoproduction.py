@@ -1,3 +1,4 @@
+import colorsys
 import unicodedata
 
 import pandas as pd
@@ -50,6 +51,17 @@ METEO_COLORS = {
     "nebulosidade": "#757575",
     "sunlight": "#fdd835"
 }
+
+METEO_CONTRAST_COLORS = {
+    "temperatura": ["#d84315", "#ad1457"],
+    "vento": ["#00acc1", "#00695c"],
+    "precipitacao": ["#64b5f6", "#3949ab"],
+    "nebulosidade": ["#424242", "#90a4ae"],
+    "sunlight": ["#ff7043", "#f57f17"]
+}
+
+SIMILAR_HUE_DISTANCE = 0.16
+MIN_RGB_DISTANCE_SQUARED = 90 ** 2
 
 LINE_WIDTH = 1.7
 LINE_OPACITY = 0.65
@@ -128,6 +140,70 @@ meteo_cols = {
 }
 
 
+def _hex_to_rgb(color):
+    color = color.lstrip("#")
+    return tuple(
+        int(color[index:index + 2], 16)
+        for index in (0, 2, 4)
+    )
+
+
+def _rgb_distance_squared(color_a, color_b):
+    rgb_a = _hex_to_rgb(color_a)
+    rgb_b = _hex_to_rgb(color_b)
+
+    return sum(
+        (component_a - component_b) ** 2
+        for component_a, component_b in zip(rgb_a, rgb_b)
+    )
+
+
+def _hex_to_hls(color):
+    red, green, blue = _hex_to_rgb(color)
+
+    return colorsys.rgb_to_hls(
+        red / 255,
+        green / 255,
+        blue / 255
+    )
+
+
+def _hue_distance(color_a, color_b):
+    hue_a, _, saturation_a = _hex_to_hls(color_a)
+    hue_b, _, saturation_b = _hex_to_hls(color_b)
+
+    if min(saturation_a, saturation_b) < 0.15:
+        return 1
+
+    distance = abs(hue_a - hue_b)
+    return min(distance, 1 - distance)
+
+
+def _colors_are_too_close(color_a, color_b):
+    return (
+        _hue_distance(color_a, color_b) <= SIMILAR_HUE_DISTANCE
+        or _rgb_distance_squared(color_a, color_b) <= MIN_RGB_DISTANCE_SQUARED
+    )
+
+
+def _get_meteo_color(meteo, prod_color):
+    base_color = METEO_COLORS.get(meteo, DEFAULT_METEO_COLOR)
+
+    if not _colors_are_too_close(prod_color, base_color):
+        return base_color
+
+    alternative_colors = METEO_CONTRAST_COLORS.get(meteo, [])
+
+    for color in alternative_colors:
+        if not _colors_are_too_close(prod_color, color):
+            return color
+
+    return max(
+        alternative_colors or [base_color],
+        key=lambda color: _rgb_distance_squared(prod_color, color)
+    )
+
+
 def beautify_figure(fig, title, yaxis_title):
     fig.update_layout(
         title=title,
@@ -202,7 +278,7 @@ def create_meteovsprod(meteo: str, tec: str):
     meteo_label, meteo_col = meteo_cols[meteo]
     prod_label, prod_col = producao_cols[tec]
     prod_color = producao_cores.get(tec, DEFAULT_PRODUCTION_COLOR)
-    meteo_color = METEO_COLORS.get(meteo, DEFAULT_METEO_COLOR)
+    meteo_color = _get_meteo_color(meteo, prod_color)
 
     fig = go.Figure()
 
