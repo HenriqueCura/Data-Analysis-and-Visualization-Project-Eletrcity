@@ -30,47 +30,93 @@ precos = create_price_timeseries()
 heatmap = create_correlation_heatmap()
 calendar = create_cluster_calendar_visualization()
 
-
 app.layout = html.Div([
     # --- BARRA DE TOPO ---
     html.Div([
-        # Título do Dashboard
+        # 1. Título do Dashboard
         html.H3("Energia em Portugal", style={
-            'display': 'inline-block', 
             'margin': '0 40px 0 0', 
-            'verticalAlign': 'middle',
-            'fontFamily': 'Arial'
+            'fontFamily': 'Arial',
+            'whiteSpace': 'nowrap'
         }),
         
-        # Contentor das Tabs
+        # 2. Contentor das Tabs
         html.Div([
             dcc.Tabs(id="tabs-menu", value='tab-1', children=[
                 dcc.Tab(label='Sazonalidade', value='tab-1', 
-                        style={'padding': '15px'},  # espaço para o limite superior
-                        selected_style={'padding': '25px'}),  # espaço para o limite superior quanfo é a tab selecionada
+                        style={'padding': '15px'}, 
+                        selected_style={'padding': '15px', 'fontWeight': 'bold'}),
                 
                 dcc.Tab(label='Meteorologia', value='tab-2', 
                         style={'padding': '15px'}, 
-                        selected_style={'padding': '25px'}),
+                        selected_style={'padding': '15px', 'fontWeight': 'bold'}),
                 
                 dcc.Tab(label='Preço', value='tab-3', 
                         style={'padding': '15px'}, 
-                        selected_style={'padding': '25px'}),
-            ], style={'height': '60px','width':'500px'}) # tamanhos de cada tab
-        ], style={'display': 'inline-block', 'verticalAlign': 'middle'})
+                        selected_style={'padding': '15px', 'fontWeight': 'bold'}),
+            ], style={'height': '50px', 'width': '500px'})
+        ]),
+
+        html.Details([
+            html.Summary(
+                "ℹ", 
+                style={
+                    'listStyle': 'none',
+                    'outline': 'none',
+                    'borderRadius': '50%',
+                    'width': '30px',
+                    'height': '30px',
+                    'border': '1px solid #ccc',
+                    'backgroundColor': '#f8f9fa',
+                    'cursor': 'pointer',
+                    'fontSize': '16px',
+                    'textAlign': 'center',
+                    'lineHeight': '28px',
+                    'userSelect': 'none',
+                }
+            ),
+            html.Div([
+                html.H5("Energia em Portugal", style={'margin': '0 0 10px 0', 'fontSize': '14px', 'fontWeight': 'bold'}),
+                html.P("Desenvolvido para a unidade curricular de VAD.", style={'margin': '0 0 5px 0', 'fontSize': '13px'}),
+                html.Hr(style={'margin': '10px 0'}),
+                html.B("Autores:", style={'fontSize': '13px'}),
+                html.Ul([
+                    html.Li("Henrique Cura - MIACD ", style={'fontSize': '12px'}),
+                    html.Li("Ricardo Pina - MIACD ", style={'fontSize': '12px'})
+                ], style={'margin': '5px 0 0 0', 'paddingLeft': '20px'})
+            ], style={
+                'position': 'absolute',
+                'right': '40px',        # Alinha com a margem direita da barra de topo
+                'top': '65px',          # Aparece logo abaixo da barra
+                'backgroundColor': 'white',
+                'border': '1px solid #ddd',
+                'borderRadius': '6px',
+                'padding': '15px',
+                'boxShadow': '0 4px 12px rgba(0,0,0,0.1)',
+                'width': '280px',
+                'zIndex': '2000'        # Fica por cima dos gráficos
+            })
+        ], style={'position': 'relative', 'marginLeft': 'auto'}) # O marginLeft: auto faz a magia de empurrar para a direita
         
     ], style={
-        'padding': '25px 40px', # espaço dos tabs para os lados (cima e baixo Y esquerda e direita)
+        'padding': '10px 40px',
         'backgroundColor': 'white', 
-        'borderBottom': '1px solid #ddd', # espaço de uma barra de fronteira cinzenta 
+        'borderBottom': '1px solid #ddd',
         'display': 'flex',        
         'alignItems': 'center'    
     }),
 
     # --- CONTEÚDO ---
-    # Este Div será preenchido pela callback 'render_content'
-    html.Div(id='tabs-content', style={'padding': '40px'}),
+    dcc.Loading(
+        id="loading-tabs",
+        type="cube", 
+        fullscreen=True, # True para ocupar o ecrã todo
+        children=html.Div(id='tabs-content', style={'padding': '40px'}),
+        color="#119DFF",
+    )
 ])
+
+
 
 # quando se clica em cada tab
 @app.callback(
@@ -87,7 +133,7 @@ def render_content(tab):
                                   opt={'actions': False} ),          # Desativa o menu de exportação e ver código), # gráfico streamgraph das produções
 dbc.Container([
     dbc.Row([
-        # --- GRÁFICO DA ESQUERDA (Geral) ---
+
         dbc.Col([
             dbc.Card([
                 dbc.CardBody([
@@ -100,15 +146,15 @@ dbc.Container([
                     )
                 ], style={'overflow': 'hidden'})
             ], style={'minHeight': '772px'}, color="secondary", outline=True)
-        ], width=6), # Largura 6 para ocupar metade
+        ], width=6), 
 
-        # --- GRÁFICO DA DIREITA (Detalhado com Dropdown) ---
+
         dbc.Col([
             dbc.Card([
                 dbc.CardBody([
                     html.H4("Análise Detalhada por Tecnologia", className="card-title"),
                     
-                    # Colocamos o dropdown dentro do cartão para ficar organizado
+                    
                     html.Div([
                         html.Label("Selecione a Tecnologia:"),
                         dcc.Dropdown(
@@ -120,7 +166,7 @@ dbc.Container([
                             ],
                             value='Eólica (kWh)',
                             clearable=False,
-                            style={'width': '40%'} # No card, 100% da largura da coluna pequena é melhor
+                            style={'width': '40%'} 
                         ),
                     ], style={'marginBottom': '15px'}),
 
@@ -130,7 +176,7 @@ dbc.Container([
                         id='grafico_tec',
                         config={'displayModeBar': False},
                         style={
-        'width': '80%',       # Define uma largura menor que 100%
+        'width': '80%',       
         'marginLeft': 'auto', # Margem automática à esquerda
         'marginRight': 'auto' # Margem automática à direita
     }
@@ -142,7 +188,7 @@ dbc.Container([
 ], fluid=True, style={'marginTop': '20px'}),
 dbc.Container([
     dbc.Row([
-        # --- COLUNA ESQUERDA (Spiral Histogram) ---
+       
         dbc.Col([
             dbc.Card([
                 dbc.CardBody([
@@ -160,7 +206,7 @@ dbc.Container([
                             ],
                             value='total',
                             clearable=False,
-                            style={'width': '40%'} # Aumentado ligeiramente para melhor leitura no card
+                            style={'width': '40%'} 
                         ),
                     ], style={'marginBottom': '20px'}),
                     html.H6('(coloque o cursor por cima de cada barra para descobrir o valor da produção)',style={'fontWeight': 'normal'}),
@@ -172,13 +218,13 @@ dbc.Container([
             ], color="secondary", outline=True)
         ], width=6),
 
-        # --- COLUNA DIREITA (Evolução Mensal / Filtros) ---
+        
         dbc.Col([
             dbc.Card([
                 dbc.CardBody([
-                    html.H4("Evolução Mensal da Produção de Energia em Portugal", className="card-title"),
+                    html.H4("Evolução num mês da Produção de Energia em Portugal", className="card-title"),
                     
-                    # Zona de Filtros dentro do Card
+                    
                     html.Div([
                         html.Label("Filtros de Data e Intervalo:"),
                         dbc.Row([
@@ -246,7 +292,7 @@ dbc.Container([
                     ],
                     value='temperatura',
                     clearable=False,
-                    style={'width': '20%'} # Ajustado para preencher a coluna
+                    style={'width': '20%'} 
                 ),
             dcc.Graph(id='timeseries_tempo',style={'width': '100%', 'height': '600px'}),
             html.H4("Correlações entre as diferentes produções e fatores meteorológicos"),
@@ -267,7 +313,7 @@ dbc.Container([
                     ],
                     value='temperatura',
                     clearable=False,
-                    style={'width': '90%'} # Ajustado para preencher a coluna
+                    style={'width': '90%'} 
                 )],width=2),
 
                     # Ano
@@ -282,7 +328,7 @@ dbc.Container([
                     ],
                     value='total',
                     clearable=False,
-                    style={'width': '90%'} # Ajustado para preencher a coluna
+                    style={'width': '90%'} 
                 ),
                     ], width=2),
             ], style={'marginBottom': '0px','marginTop':'20px'}),
@@ -300,7 +346,7 @@ dbc.Container([
     elif tab == 'tab-3':
         return html.Div([
             html.H1('Preço da eletricidade ', style={'textAlign': 'left'}),
-            html.H4("Menu de análise dos preços da eletricidade"),
+            html.H4("Evolução do preço da eletricidade"),
             dcc.Graph(id='grafico-precos', figure=precos),
             html.H4('Comparação de condição meteorológica selecionado e preço da energia'),
             dcc.Dropdown(
@@ -335,7 +381,7 @@ dbc.Container([
             clearable=False,
             style={'width': '90%'}
         )
-    ], width=2), # Aqui estava o erro: o width deve estar DENTRO do parêntese da Col
+    ], width=2), 
     
     dbc.Col([
         dcc.Dropdown(
@@ -350,7 +396,7 @@ dbc.Container([
             style={'width': '60%'}
         )
     ], width=2), 
-]), # Fechamento da Row
+]),
             dcc.Graph(id='calendar'),
         ])
 
@@ -366,7 +412,7 @@ def update_circular_graph(tecnologia_escolhida):
     if not tecnologia_escolhida:
         raise dash.exceptions.PreventUpdate
         
-    # Chamamos a tua função de histograma espiral
+    
     fig = create_circular_histogram(tecnologia_escolhida)
     return fig
 
@@ -379,7 +425,7 @@ def update_circular_graph(tecnologia_escolhida):
     if not tecnologia_escolhida:
         raise dash.exceptions.PreventUpdate
         
-    # Chamamos a tua função de histograma espiral
+    
     fig = create_spiral_histogram(tecnologia_escolhida)
 
     return fig
@@ -390,7 +436,7 @@ def update_circular_graph(tecnologia_escolhida):
      Input('radio-ano', 'value')]
 )
 def print_aviso(mes_escolhido, _,ano_escolhido):
-    # Remove o '(kWh)' apenas para o título ficar mais limpo visualmente
+    
     if int(mes_escolhido) == 10 and int(ano_escolhido) == 2025:
         return "AVISO: Este mês tem valores em falta. Particular atenção para o dia 14 que tem mais de 95% em falta! "
    
@@ -402,16 +448,15 @@ def print_aviso(mes_escolhido, _,ano_escolhido):
      Input('radio-ano', 'value')]
 )
 def update_circular_graph(mes_escolhido, intervalo_escolhido,ano_escolhido):
-    # 1. Prevenção básica
+   
     if not mes_escolhido or not ano_escolhido:
         raise dash.exceptions.PreventUpdate
 
-    # 2. Conversão para inteiro (importante se o teu DF usa int e os inputs são str)
+    
     mes = int(mes_escolhido)
     ano = int(ano_escolhido)
 
-    # 3. Gerar o gráfico passando os dois parâmetros
-    # Certifica-te de que a tua função 'create_circular_histogram' aceita (mes, ano)
+
     fig = area_month_year_interval(mes,ano,intervalo_escolhido)
     
     return fig
@@ -424,7 +469,7 @@ def update_weather_timeseries(tecnologia_escolhida):
     if not tecnologia_escolhida:
         raise dash.exceptions.PreventUpdate
         
-    # Chamamos a tua função de histograma espiral
+   
     fig = create_weather_timeseries(tecnologia_escolhida)
     return fig
 
@@ -440,7 +485,7 @@ def update_weather_timeseries(meteo_escolhido,tecnologia_escolhida):
     if not tecnologia_escolhida or not meteo_escolhido:
         raise dash.exceptions.PreventUpdate
         
-    # Chamamos a tua função de histograma espiral
+   
     fig = create_meteovsprod(meteo_escolhido,tecnologia_escolhida)
     return fig
 
@@ -449,7 +494,7 @@ def update_weather_timeseries(meteo_escolhido,tecnologia_escolhida):
     Input('dropdown-tecnologia', 'value')
 )
 def update_title(tecnologia_selecionada):
-    # Remove o '(kWh)' apenas para o título ficar mais limpo visualmente
+   
     nome_limpo = tecnologia_selecionada.replace(' (kWh)', '')
     
     return f"Evolução Mensal: {nome_limpo}"
@@ -464,7 +509,7 @@ def update_cluster_price(cluster,ano):
         raise dash.exceptions.PreventUpdate
         
     ano = int(ano)
-    # Chamamos a tua função de histograma espiral
+
     fig = create_cluster_calendar_visualization(cluster,ano)
     return fig
 
@@ -476,10 +521,12 @@ def update_meteovspreco(meteo_escolhido):
     if not meteo_escolhido:
         raise dash.exceptions.PreventUpdate
         
-    # Chamamos a tua função de histograma espiral
     fig = create_preco_meteocond_streamgraph(meteo_escolhido)
     return fig
 
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+    
+    
