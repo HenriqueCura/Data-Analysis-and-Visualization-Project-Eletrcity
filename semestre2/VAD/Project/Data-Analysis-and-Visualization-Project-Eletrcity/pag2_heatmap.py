@@ -5,14 +5,17 @@ import pandas as pd
 import plotly.graph_objects as go
 
 
+# Carrega os datasets usados para cruzar meteorologia diaria com producao horaria.
 df_diarios = pd.read_csv("data/dados_diarios.csv")
 df_hora = pd.read_csv("data/dados_hora.csv")
 
+# Garante que a coluna Data fica em formato datetime para merges e agrupamentos.
 df_diarios["Data"] = pd.to_datetime(df_diarios["Data"])
 df_hora["Data"] = pd.to_datetime(df_hora["Data"])
 
 
 def _normalize(text):
+    # Remove acentos e coloca o texto em minusculas para comparar nomes de colunas.
     normalized = unicodedata.normalize("NFKD", str(text))
     return "".join(
         char for char in normalized
@@ -21,6 +24,7 @@ def _normalize(text):
 
 
 def _find_column(df, *tokens):
+    # Procura a primeira coluna cujo nome contenha todos os tokens pedidos.
     normalized_tokens = [_normalize(token) for token in tokens]
 
     for col in df.columns:
@@ -33,12 +37,14 @@ def _find_column(df, *tokens):
 
 
 def create_correlation_heatmap():
+    # Soma os dados horarios por dia para ficar na mesma granularidade dos dados diarios.
     prod_diaria = (
         df_hora
         .groupby("Data", as_index=False)
         .sum(numeric_only=True)
     )
 
+    # Junta meteorologia e producao diaria usando a data como chave comum.
     df_corr = pd.merge(
         df_diarios,
         prod_diaria,
@@ -46,8 +52,10 @@ def create_correlation_heatmap():
         how="inner"
     )
 
+    # Identifica a coluna de producao total mesmo que tenha acentos ou pequenas variacoes.
     rede_distribuicao_col = _find_column(df_corr, "rede", "distribuicao")
 
+    # Lista as variaveis que queremos comparar na matriz de correlacao.
     cols_corr = [
         "temp_C_mean",
         "wind_speed_mean",
@@ -62,6 +70,7 @@ def create_correlation_heatmap():
         _find_column(df_corr, "biomassa")
     ]
 
+    # Remove entradas vazias ou colunas que nao existam no ficheiro de dados.
     cols_corr = [
         col for col in cols_corr
         if col and col in df_corr.columns
@@ -69,6 +78,7 @@ def create_correlation_heatmap():
 
     df_corr = df_corr[cols_corr].copy()
 
+    # Troca nomes tecnicos por nomes mais faceis de ler no grafico.
     rename_columns = {
         "temp_C_mean": "Temperatura média",
         "wind_speed_mean": "Velocidade do vento",
@@ -82,11 +92,14 @@ def create_correlation_heatmap():
 
     df_corr = df_corr.rename(columns=rename_columns)
 
+    # Calcula o coeficiente de correlacao entre todas as variaveis numericas.
     corr_matrix = df_corr.corr(numeric_only=True)
 
+    # Mostra valores apenas na metade inferior para nao repetir a mesma correlacao duas vezes.
     mask_lower = np.tril(np.ones(corr_matrix.shape, dtype=bool))
     heatmap_values = corr_matrix.where(mask_lower)
 
+    # Prepara os numeros que aparecem escritos dentro das celulas do heatmap.
     heatmap_text = [
         [
             f"{corr_matrix.iloc[i, j]:.2f}" if mask_lower[i, j] else ""
@@ -107,6 +120,7 @@ def create_correlation_heatmap():
     cell_padding = 0.38
 
     def scale_to_cell(values, center, value_min, value_max, invert=False):
+        # Converte valores reais para coordenadas pequenas dentro de uma celula da matriz.
         if value_max == value_min:
             return np.full(len(values), center)
 
@@ -123,6 +137,7 @@ def create_correlation_heatmap():
 
     fig = go.Figure()
 
+    # Camada principal: heatmap com os valores de correlacao.
     fig.add_trace(go.Heatmap(
         z=heatmap_values.values,
         x=list(range(n_vars)),
@@ -149,6 +164,7 @@ def create_correlation_heatmap():
         hoverongaps=False
     ))
 
+    # Na metade superior, cada celula recebe um mini scatterplot do par de variaveis.
     for i, row_name in enumerate(corr_matrix.index):
         for j, col_name in enumerate(corr_matrix.columns):
             if i < j:
@@ -196,6 +212,7 @@ def create_correlation_heatmap():
                     showlegend=False
                 ))
 
+                # Acrescenta uma linha de tendencia para facilitar a leitura da relacao.
                 if len(pair_data) > 1 and x_max != x_min and y_max != y_min:
                     slope, intercept = np.polyfit(x_values, y_values, 1)
 
@@ -235,6 +252,7 @@ def create_correlation_heatmap():
                         showlegend=False
                     ))
 
+    # Define dimensoes, margens e aspeto visual geral.
     fig.update_layout(
         template="plotly_white",
         width=1100,
@@ -245,6 +263,7 @@ def create_correlation_heatmap():
         plot_bgcolor="white"
     )
 
+    # Coloca os nomes das variaveis no eixo X.
     fig.update_xaxes(
         tickmode="array",
         tickvals=list(range(n_vars)),
@@ -255,6 +274,7 @@ def create_correlation_heatmap():
         zeroline=False
     )
 
+    # Inverte o eixo Y para a matriz ficar alinhada como uma tabela.
     fig.update_yaxes(
         tickmode="array",
         tickvals=list(range(n_vars)),
@@ -267,5 +287,6 @@ def create_correlation_heatmap():
     return fig
 
 if __name__ == "__main__":
+    # Teste local: cria e abre o grafico quando o ficheiro e executado diretamente.
     fig = create_correlation_heatmap()
     fig.show()  

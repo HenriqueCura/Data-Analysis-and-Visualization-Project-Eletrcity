@@ -6,16 +6,20 @@ import plotly.graph_objects as go
 #%% =========================
 # 1. CARREGAMENTO DOS DADOS
 # =========================
+# Le os ficheiros base: dados diarios com meteorologia e dados horarios com producao.
 df_diarios = pd.read_csv("data/dados_diarios.csv")
 df_hora = pd.read_csv("data/dados_hora.csv")
 
+# Converte datas para datetime para permitir analise temporal correta.
 df_diarios["Data"] = pd.to_datetime(df_diarios["Data"])
 df_hora["Data"] = pd.to_datetime(df_hora["Data"])
 
+# Ordena os registos para que as series temporais sejam desenhadas pela ordem certa.
 df_diarios = df_diarios.sort_values("Data")
 df_hora = df_hora.sort_values("Data")
 
 def beautify_figure(fig,yaxis_title):
+    # Aplica a configuracao visual comum aos graficos meteorologicos.
     fig.update_layout(
         template="plotly_white",
         #width=1400,
@@ -49,6 +53,7 @@ def beautify_figure(fig,yaxis_title):
     return fig
 
 
+# Seleciona apenas as colunas meteorologicas usadas nesta pagina.
 cols_meteo = [
     "Data",
     "Sunlight (em minutos)",
@@ -64,20 +69,27 @@ cols_meteo = [
     "max_cloud"
 ]
 
+# Cria uma copia so com meteorologia e usa Data como indice temporal.
 df_meteo = df_diarios[cols_meteo].copy()
 df_meteo.set_index("Data", inplace=True)
 
 
 #%%
 def create_weather_timeseries(tec:str):
+    # Lista de opcoes que podem ser pedidas pelo dashboard/dropdown.
     tecs = ['sunlight','temperatura','nebulosidade','precipitacao','vento']
+
+    # Garante que a funcao so recebe uma variavel meteorologica valida.
     if tec not in tecs:
         raise ValueError(f'Valor dado incorreto. Deve ser um de {tecs}')
+
     if tec == 'temperatura':
+        # Grafico de temperatura com minimo, media e maximo.
         fig_temp = go.Figure()
 
         
 
+        # Linha da temperatura minima.
         fig_temp.add_trace(go.Scatter(
             x=df_meteo.index,
             y=df_meteo["temp_C_min"],
@@ -85,6 +97,7 @@ def create_weather_timeseries(tec:str):
             name="Temperatura mínima",
             line=dict(color="#9fd3f2", width=2)
         ))
+        # Linha principal: temperatura media.
         fig_temp.add_trace(go.Scatter(
             x=df_meteo.index,
             y=df_meteo["temp_C_mean"],
@@ -93,6 +106,7 @@ def create_weather_timeseries(tec:str):
             line=dict(color="#5fa8d3", width=3)
         ))
 
+        # Linha da temperatura maxima.
         fig_temp.add_trace(go.Scatter(
             x=df_meteo.index,
             y=df_meteo["temp_C_max"],
@@ -108,10 +122,12 @@ def create_weather_timeseries(tec:str):
         )
         return fig_temp
     elif tec == 'vento':
+        # Grafico da velocidade do vento com minimo, medio e maximo.
         fig_wind = go.Figure()
 
        
 
+        # Linha do vento minimo.
         fig_wind.add_trace(go.Scatter(
             x=df_meteo.index,
             y=df_meteo["wind_speed_min"],
@@ -119,6 +135,7 @@ def create_weather_timeseries(tec:str):
             name="Vento mínimo",
             line=dict(color="#a5d6a7", width=2)
         ))
+        # Linha principal: vento medio.
         fig_wind.add_trace(go.Scatter(
             x=df_meteo.index,
             y=df_meteo["wind_speed_mean"],
@@ -127,6 +144,7 @@ def create_weather_timeseries(tec:str):
             line=dict(color="#66bb6a", width=3)
         ))
 
+        # Linha do vento maximo.
         fig_wind.add_trace(go.Scatter(
             x=df_meteo.index,
             y=df_meteo["wind_speed_max"],
@@ -142,6 +160,7 @@ def create_weather_timeseries(tec:str):
         )
         return fig_wind
     elif tec == 'precipitacao':
+        # Grafico simples da precipitacao acumulada diaria.
         fig_precip = px.line(
                                 df_meteo,
                                 x=df_meteo.index,
@@ -157,10 +176,12 @@ def create_weather_timeseries(tec:str):
         )
         return fig_precip
     elif tec=='nebulosidade':
+        # Grafico da cobertura de nuvens com minimo, media e maximo.
         fig_cloud = go.Figure()
 
         
 
+        # Linha da nebulosidade minima.
         fig_cloud.add_trace(go.Scatter(
             x=df_meteo.index,
             y=df_meteo["min_cloud"],
@@ -168,6 +189,7 @@ def create_weather_timeseries(tec:str):
             name="Nebulosidade mínima",
             line=dict(color="#cfd8dc", width=2)
         ))
+        # Linha principal: nebulosidade media.
         fig_cloud.add_trace(go.Scatter(
             x=df_meteo.index,
             y=df_meteo["mean_cloud"],
@@ -176,6 +198,7 @@ def create_weather_timeseries(tec:str):
             line=dict(color="#90a4ae", width=3)
         ))
 
+        # Linha da nebulosidade maxima.
         fig_cloud.add_trace(go.Scatter(
             x=df_meteo.index,
             y=df_meteo["max_cloud"],
@@ -191,6 +214,7 @@ def create_weather_timeseries(tec:str):
         )
         return fig_cloud
     else:
+        # Caso restante: grafico dos minutos diarios de luz solar.
         fig_sun = px.line(
                             df_meteo,
                             x=df_meteo.index,

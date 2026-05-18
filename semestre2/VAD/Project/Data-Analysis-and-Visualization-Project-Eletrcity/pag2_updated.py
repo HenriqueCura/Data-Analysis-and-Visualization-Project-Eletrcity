@@ -5,6 +5,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import plotly.io as pio
 
+# Define o browser como destino dos graficos quando o ficheiro e executado isoladamente.
 pio.renderers.default = "browser"
 
 #%%
@@ -12,12 +13,15 @@ pio.renderers.default = "browser"
 # 1. CARREGAMENTO DOS DADOS
 # =========================
 
+# Le os datasets principais do projeto.
 df_diarios = pd.read_csv("data/dados_diarios.csv")
 df_hora = pd.read_csv("data/dados_hora.csv")
 
+# Converte datas para datetime para permitir graficos e agregacoes temporais.
 df_diarios["Data"] = pd.to_datetime(df_diarios["Data"])
 df_hora["Data"] = pd.to_datetime(df_hora["Data"])
 
+# Ordena cronologicamente para as linhas nao ficarem fora de ordem.
 df_diarios = df_diarios.sort_values("Data")
 df_hora = df_hora.sort_values("Data")
 
@@ -27,6 +31,7 @@ df_hora = df_hora.sort_values("Data")
 # =========================
 
 def beautify_figure(fig, title, yaxis_title):
+    # Centraliza a configuracao visual comum aos varios graficos.
     fig.update_layout(
         title=title,
         template="plotly_white",
@@ -55,6 +60,7 @@ def beautify_figure(fig, title, yaxis_title):
 # 3. SELEÇÃO DOS DADOS METEOROLÓGICOS
 # =========================
 
+# Define as colunas meteorologicas usadas nos graficos de series temporais.
 cols_meteo = [
     "Data",
     "Sunlight (em minutos)",
@@ -70,9 +76,11 @@ cols_meteo = [
     "max_cloud"
 ]
 
+# Cria um dataframe so com meteorologia e usa Data como indice.
 df_meteo = df_diarios[cols_meteo].copy()
 df_meteo.set_index("Data", inplace=True)
 
+# Mostra as primeiras linhas para confirmar rapidamente se os dados foram carregados.
 print(df_meteo.head())
 
 #%%
@@ -80,6 +88,7 @@ print(df_meteo.head())
 # 4. SUNLIGHT
 # =========================
 
+# Serie temporal dos minutos de luz solar por dia.
 fig_sun = px.line(
     df_meteo,
     x=df_meteo.index,
@@ -88,6 +97,7 @@ fig_sun = px.line(
 
 fig_sun.update_traces(line=dict(color="#f9a825", width=2.8))
 
+# Aplica o layout comum e depois apresenta o grafico.
 fig_sun = beautify_figure(
     fig_sun,
     "Evolução da Luz Solar ao Longo do Tempo",
@@ -101,8 +111,10 @@ fig_sun.show()
 # 5. TEMPERATURA
 # =========================
 
+# Grafico com temperatura media, minima e maxima.
 fig_temp = go.Figure()
 
+# Linha principal da temperatura media.
 fig_temp.add_trace(go.Scatter(
     x=df_meteo.index,
     y=df_meteo["temp_C_mean"],
@@ -111,6 +123,7 @@ fig_temp.add_trace(go.Scatter(
     line=dict(color="#5fa8d3", width=3)
 ))
 
+# Linha da temperatura minima.
 fig_temp.add_trace(go.Scatter(
     x=df_meteo.index,
     y=df_meteo["temp_C_min"],
@@ -119,6 +132,7 @@ fig_temp.add_trace(go.Scatter(
     line=dict(color="#9fd3f2", width=2)
 ))
 
+# Linha da temperatura maxima.
 fig_temp.add_trace(go.Scatter(
     x=df_meteo.index,
     y=df_meteo["temp_C_max"],
@@ -140,8 +154,10 @@ fig_temp.show()
 # 6. VELOCIDADE DO VENTO
 # =========================
 
+# Grafico com velocidade media, minima e maxima do vento.
 fig_wind = go.Figure()
 
+# Linha principal do vento medio.
 fig_wind.add_trace(go.Scatter(
     x=df_meteo.index,
     y=df_meteo["wind_speed_mean"],
@@ -150,6 +166,7 @@ fig_wind.add_trace(go.Scatter(
     line=dict(color="#66bb6a", width=3)
 ))
 
+# Linha do vento minimo.
 fig_wind.add_trace(go.Scatter(
     x=df_meteo.index,
     y=df_meteo["wind_speed_min"],
@@ -158,6 +175,7 @@ fig_wind.add_trace(go.Scatter(
     line=dict(color="#a5d6a7", width=2)
 ))
 
+# Linha do vento maximo.
 fig_wind.add_trace(go.Scatter(
     x=df_meteo.index,
     y=df_meteo["wind_speed_max"],
@@ -179,6 +197,7 @@ fig_wind.show()
 # 7. PRECIPITAÇÃO
 # =========================
 
+# Serie temporal da precipitacao acumulada diaria.
 fig_precip = px.line(
     df_meteo,
     x=df_meteo.index,
@@ -200,8 +219,10 @@ fig_precip.show()
 # 8. COBERTURA DE NUVENS
 # =========================
 
+# Grafico com nebulosidade media, minima e maxima.
 fig_cloud = go.Figure()
 
+# Linha principal da nebulosidade media.
 fig_cloud.add_trace(go.Scatter(
     x=df_meteo.index,
     y=df_meteo["mean_cloud"],
@@ -210,6 +231,7 @@ fig_cloud.add_trace(go.Scatter(
     line=dict(color="#90a4ae", width=3)
 ))
 
+# Linha da nebulosidade minima.
 fig_cloud.add_trace(go.Scatter(
     x=df_meteo.index,
     y=df_meteo["min_cloud"],
@@ -218,6 +240,7 @@ fig_cloud.add_trace(go.Scatter(
     line=dict(color="#cfd8dc", width=2)
 ))
 
+# Linha da nebulosidade maxima.
 fig_cloud.add_trace(go.Scatter(
     x=df_meteo.index,
     y=df_meteo["max_cloud"],
@@ -241,10 +264,13 @@ fig_cloud.show()
 # 9. EVOLUÇÃO DO PREÇO DA ELETRICIDADE
 # =========================
 
+# Calcula uma media movel de 7 dias para suavizar a variacao diaria do preco.
 df_diarios["price_ma7"] = df_diarios["avg_price_eur_mwh"].rolling(window=7).mean()
 
+# Grafico do preco diario e da tendencia suavizada.
 fig_price = go.Figure()
 
+# Linha do preco medio diario real.
 fig_price.add_trace(go.Scatter(
     x=df_diarios["Data"],
     y=df_diarios["avg_price_eur_mwh"],
@@ -253,6 +279,7 @@ fig_price.add_trace(go.Scatter(
     line=dict(color="#8e24aa", width=2.5)
 ))
 
+# Linha da media movel semanal.
 fig_price.add_trace(go.Scatter(
     x=df_diarios["Data"],
     y=df_diarios["price_ma7"],
@@ -274,6 +301,7 @@ fig_price.show()
 # 10. PRODUÇÃO DIÁRIA TOTAL
 # =========================
 
+# Agrega os valores horarios de producao para obter totais diarios.
 prod_diaria = (
     df_hora
     .groupby("Data", as_index=False)
@@ -285,16 +313,19 @@ prod_diaria = (
 # 11. PRODUÇÃO VS METEOROLOGIA COM DUPLO FILTRO
 # =========================
 
-# Criar produção diária a partir dos dados horários
+# Criar producao diaria a partir dos dados horarios.
 
+# Recarrega os dados horarios para garantir que esta seccao parte do ficheiro original.
 df_hora = pd.read_csv("data/dados_hora.csv")
 df_hora["Data"] = pd.to_datetime(df_hora["Data"])
 
+# Soma as producoes por dia.
 prod_diaria = (
     df_hora
     .groupby("Data", as_index=False)
     .sum(numeric_only=True)
 )
+# Junta producao diaria com meteorologia diaria.
 df_prod_meteo = pd.merge(
     prod_diaria,
     df_diarios,
@@ -302,12 +333,14 @@ df_prod_meteo = pd.merge(
     how="inner"
 )
 
+# Colunas de producao que podem ser escolhidas no primeiro dropdown.
 producao_cols = {
     "Eólica": "Eólica (kWh)",
     "Hídrica": "Hídrica (kWh)",
     "Fotovoltaica": "Fotovoltaica (kWh)"
 }
 
+# Colunas meteorologicas que podem ser escolhidas no segundo dropdown.
 meteo_cols = {
     "Temperatura média": "temp_C_mean",
     "Velocidade do vento": "wind_speed_mean",
@@ -316,12 +349,13 @@ meteo_cols = {
     "Luz solar": "Sunlight (em minutos)"
 }
 
-# Remover colunas que não existam no teu dataset
+# Remove colunas que nao existam no dataset para evitar erros no grafico.
 producao_cols = {
     label: col for label, col in producao_cols.items()
     if col in df_prod_meteo.columns
 }
 
+# Faz a mesma validacao para as variaveis meteorologicas.
 meteo_cols = {
     label: col for label, col in meteo_cols.items()
     if col in df_prod_meteo.columns
@@ -329,13 +363,14 @@ meteo_cols = {
 
 fig_dual = go.Figure()
 
+# Separa labels visiveis e nomes reais das colunas.
 prod_labels = list(producao_cols.keys())
 prod_columns = list(producao_cols.values())
 
 meteo_labels = list(meteo_cols.keys())
 meteo_columns = list(meteo_cols.values())
 
-# Linha de produção inicial
+# Linha de producao inicial, associada ao eixo Y esquerdo.
 fig_dual.add_trace(go.Scatter(
     x=df_prod_meteo["Data"],
     y=df_prod_meteo[prod_columns[0]],
@@ -346,7 +381,7 @@ fig_dual.add_trace(go.Scatter(
     line=dict(color="#1f4e79", width=2)
 ))
 
-# Linha meteorológica inicial
+# Linha meteorologica inicial, associada ao eixo Y direito.
 fig_dual.add_trace(go.Scatter(
     x=df_prod_meteo["Data"],
     y=df_prod_meteo[meteo_columns[0]],
@@ -357,7 +392,7 @@ fig_dual.add_trace(go.Scatter(
     line=dict(color="#c62828", width=2)
 ))
 
-# Dropdown produção
+# Botao/dropdown que troca a coluna usada na linha de producao.
 buttons_prod = []
 
 for label, col in producao_cols.items():
@@ -373,7 +408,7 @@ for label, col in producao_cols.items():
         ]
     ))
 
-# Dropdown meteorologia
+# Botao/dropdown que troca a coluna usada na linha meteorologica.
 buttons_meteo = []
 
 for label, col in meteo_cols.items():
@@ -389,6 +424,7 @@ for label, col in meteo_cols.items():
         ]
     ))
 
+# Layout do grafico com dois eixos Y e dois dropdowns independentes.
 fig_dual.update_layout(
     title="Produção Energética vs Condições Meteorológicas",
     template="plotly_white",
@@ -473,6 +509,7 @@ fig_dual.show()
 # 12. HEATMAP - MATRIZ DE CORRELAÇÃO
 # =========================
 
+# Junta novamente meteorologia e producao para calcular correlacoes.
 df_corr = pd.merge(
     df_diarios,
     prod_diaria,
@@ -480,6 +517,7 @@ df_corr = pd.merge(
     how="inner"
 )
 
+# Lista de variaveis usadas na matriz de correlacao.
 cols_corr = [
     "temp_C_mean",
     "wind_speed_mean",
@@ -493,14 +531,19 @@ cols_corr = [
     "Biomassa (kWh)"
 ]
 
+# Mantem apenas colunas realmente presentes no dataframe.
 cols_corr = [col for col in cols_corr if col in df_corr.columns]
 
 df_corr = df_corr[cols_corr].copy()
 
+# Calcula a matriz de correlacao entre todas as variaveis selecionadas.
 corr_matrix = df_corr.corr()
 
+# Mostra so a metade inferior do heatmap para evitar repeticao.
 mask_lower = np.tril(np.ones(corr_matrix.shape, dtype=bool))
 heatmap_values = corr_matrix.where(mask_lower)
+
+# Texto dos coeficientes mostrado dentro das celulas.
 heatmap_text = [
     [
         f"{corr_matrix.iloc[i, j]:.2f}" if mask_lower[i, j] else ""
@@ -521,6 +564,7 @@ n_vars = len(corr_matrix.columns)
 cell_padding = 0.38
 
 def scale_to_cell(values, center, value_min, value_max, invert=False):
+    # Reescala valores reais para caberem como mini grafico dentro de cada celula.
     if value_max == value_min:
         return np.full(len(values), center)
 
@@ -537,6 +581,7 @@ def scale_to_cell(values, center, value_min, value_max, invert=False):
 
 fig_heatmap = go.Figure()
 
+# Camada base: heatmap das correlacoes.
 fig_heatmap.add_trace(go.Heatmap(
     z=heatmap_values.values,
     x=list(range(n_vars)),
@@ -557,6 +602,7 @@ fig_heatmap.add_trace(go.Heatmap(
     hoverongaps=False
 ))
 
+# Camada superior: mini scatterplots para visualizar relacoes entre pares de variaveis.
 for i, row_name in enumerate(corr_matrix.index):
     for j, col_name in enumerate(corr_matrix.columns):
         if i < j:
@@ -589,6 +635,7 @@ for i, row_name in enumerate(corr_matrix.index):
                 showlegend=False
             ))
 
+            # Linha de tendencia linear quando ha dados suficientes.
             if len(pair_data) > 1 and x_max != x_min and y_max != y_min:
                 slope, intercept = np.polyfit(x_values, y_values, 1)
                 line_x_values = np.array([x_min, x_max])
@@ -616,6 +663,7 @@ for i, row_name in enumerate(corr_matrix.index):
                     showlegend=False
                 ))
 
+# Configura dimensoes, eixos e aspeto final da matriz.
 fig_heatmap.update_layout(
     title="Matriz de Correlação entre Meteorologia e Produção Energética",
     template="plotly_white",

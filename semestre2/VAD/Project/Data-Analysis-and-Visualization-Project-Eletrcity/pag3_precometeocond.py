@@ -4,6 +4,7 @@ import pandas as pd
 import plotly.graph_objects as go
 
 
+# Determina a pasta do ficheiro para carregar dados com caminho robusto.
 try:
     BASE_DIR = Path(__file__).resolve().parent
 except NameError:
@@ -11,13 +12,17 @@ except NameError:
 
 DATA_DIR = BASE_DIR / "data"
 
+# Carrega os dados diarios, onde existem preco e variaveis meteorologicas.
 df_diarios = pd.read_csv(DATA_DIR / "dados_diarios.csv")
 df_diarios["Data"] = pd.to_datetime(df_diarios["Data"])
 df_diarios = df_diarios.sort_values("Data")
 
 
+# Nome da coluna do preco medio diario usada na comparacao.
 PRICE_COL = "avg_price_eur_mwh"
 
+# Configuracoes das variaveis meteorologicas disponiveis no dropdown.
+# Cada entrada define label, coluna, unidade, cor e nomes alternativos aceites.
 METEO_CONFIGS = {
     "temperatura": {
         "label": "Temperatura media",
@@ -56,6 +61,7 @@ METEO_CONFIGS = {
     }
 }
 
+# Configuracao da serie de preco usada sempre no streamgraph.
 PRICE_CONFIG = {
     "label": "Preco medio diario",
     "column": PRICE_COL,
@@ -63,6 +69,7 @@ PRICE_CONFIG = {
     "color": "#c62828"
 }
 
+# Opcoes prontas para usar num dropdown de interface.
 dropdown_options_preco_meteo = [
     {"label": "Temperatura media", "value": "temperatura"},
     {"label": "Precipitacao", "value": "precipitacao"},
@@ -73,6 +80,7 @@ dropdown_options_preco_meteo = [
 
 
 def _normalize_key(value):
+    # Converte a escolha do utilizador para uma chave interna valida.
     if value is None:
         return "temperatura"
 
@@ -87,6 +95,7 @@ def _normalize_key(value):
 
 
 def _selected_meteo_config(condition):
+    # Obtem a configuracao da variavel meteorologica escolhida e valida a coluna.
     condition = _normalize_key(condition)
     config = METEO_CONFIGS[condition]
 
@@ -97,6 +106,7 @@ def _selected_meteo_config(condition):
 
 
 def _scale_0_1(series):
+    # Normaliza uma serie para o intervalo 0-1, permitindo comparar unidades diferentes.
     min_value = series.min()
     max_value = series.max()
 
@@ -107,18 +117,22 @@ def _scale_0_1(series):
 
 
 def _prepare_mirror_data(condition="temperatura", rolling_window=7):
+    # Prepara os dados que vao ser desenhados no streamgraph espelhado.
     meteo_config = _selected_meteo_config(condition)
     configs = [PRICE_CONFIG, meteo_config]
     cols = ["Data", PRICE_CONFIG["column"], meteo_config["column"]]
 
+    # Mantem apenas as colunas necessarias e remove linhas sem valores.
     stream_df = df_diarios[cols].dropna().copy()
 
     for config in configs:
         col = config["column"]
         scaled_col = f"{col}_scaled"
 
+        # Normaliza cada variavel para tornar preco e meteorologia comparaveis.
         stream_df[scaled_col] = _scale_0_1(stream_df[col].astype(float))
 
+        # Aplica media movel para suavizar ruido diario, se pedido.
         if rolling_window and rolling_window > 1:
             stream_df[scaled_col] = (
                 stream_df[scaled_col]
@@ -126,6 +140,7 @@ def _prepare_mirror_data(condition="temperatura", rolling_window=7):
                 .mean()
             )
 
+    # Preco fica positivo; meteorologia fica negativa para criar efeito espelhado.
     stream_df["Preco_normalizado"] = stream_df[f"{PRICE_CONFIG['column']}_scaled"]
     stream_df["Meteo_normalizado"] = -stream_df[f"{meteo_config['column']}_scaled"]
 
@@ -133,6 +148,7 @@ def _prepare_mirror_data(condition="temperatura", rolling_window=7):
 
 
 def create_preco_meteocond_streamgraph(condicao="temperatura", rolling_window=7):
+    # Cria os dados normalizados de acordo com a condicao escolhida.
     stream_df, meteo_config = _prepare_mirror_data(
         condition=condicao,
         rolling_window=rolling_window
@@ -142,6 +158,7 @@ def create_preco_meteocond_streamgraph(condicao="temperatura", rolling_window=7)
     price_col = PRICE_CONFIG["column"]
     meteo_col = meteo_config["column"]
 
+    # Area superior: preco normalizado, mantendo o valor real no hover.
     fig.add_trace(go.Scatter(
         x=stream_df["Data"],
         y=stream_df["Preco_normalizado"],
@@ -164,6 +181,7 @@ def create_preco_meteocond_streamgraph(condicao="temperatura", rolling_window=7)
         )
     ))
 
+    # Area inferior: variavel meteorologica normalizada e invertida.
     fig.add_trace(go.Scatter(
         x=stream_df["Data"],
         y=stream_df["Meteo_normalizado"],
@@ -187,12 +205,14 @@ def create_preco_meteocond_streamgraph(condicao="temperatura", rolling_window=7)
         )
     ))
 
+    # Linha central que separa preco e meteorologia.
     fig.add_hline(
         y=0,
         line_width=1.2,
         line_color="#2F3A45"
     )
 
+    # Etiqueta visual para a metade superior do grafico.
     fig.add_annotation(
         x=0.01,
         y=0.96,
@@ -204,6 +224,7 @@ def create_preco_meteocond_streamgraph(condicao="temperatura", rolling_window=7)
         xanchor="left"
     )
 
+    # Etiqueta visual para a metade inferior do grafico.
     fig.add_annotation(
         x=0.01,
         y=0.04,
@@ -215,6 +236,7 @@ def create_preco_meteocond_streamgraph(condicao="temperatura", rolling_window=7)
         xanchor="left"
     )
 
+    # Layout final: legenda, range slider e escala fixa entre -1 e 1.
     fig.update_layout(
         template="plotly_white",
         width=None,
@@ -254,6 +276,7 @@ def create_preco_meteocond_streamgraph(condicao="temperatura", rolling_window=7)
 
 
 def create_price_weather_streamgraph(condicao="temperatura", rolling_window=7):
+    # Alias em ingles para reutilizar a mesma funcao noutros ficheiros.
     return create_preco_meteocond_streamgraph(
         condicao=condicao,
         rolling_window=rolling_window
@@ -261,6 +284,7 @@ def create_price_weather_streamgraph(condicao="temperatura", rolling_window=7):
 
 
 def create_streamgraph_preco_meteocond(condicao="temperatura", rolling_window=7):
+    # Alias com outro nome para manter compatibilidade com chamadas existentes.
     return create_preco_meteocond_streamgraph(
         condicao=condicao,
         rolling_window=rolling_window
@@ -268,5 +292,6 @@ def create_streamgraph_preco_meteocond(condicao="temperatura", rolling_window=7)
 
 
 if __name__ == "__main__":
+    # Teste local com a condicao meteorologica temperatura.
     fig = create_preco_meteocond_streamgraph("temperatura")
     fig.show()

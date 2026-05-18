@@ -8,16 +8,20 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 
+# Abre os graficos no browser quando este ficheiro e executado diretamente.
 pio.renderers.default = "browser"
 
+# Constroi caminhos absolutos para os CSV, independentemente da pasta de execucao.
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 
+# Carrega producao horaria e dados diarios com preco/meteorologia.
 df_hora = pd.read_csv(DATA_DIR / "dados_hora.csv")
 df_diarios = pd.read_csv(DATA_DIR / "dados_diarios.csv")
 
 
 def _normalize(text):
+    # Remove acentos e uniformiza texto para comparar nomes de colunas e parametros.
     normalized = unicodedata.normalize("NFKD", str(text))
     return "".join(
         char for char in normalized
@@ -26,6 +30,7 @@ def _normalize(text):
 
 
 def _find_column(df, *tokens):
+    # Procura uma coluna que contenha todos os tokens indicados.
     normalized_tokens = [_normalize(token) for token in tokens]
 
     for col in df.columns:
@@ -37,13 +42,16 @@ def _find_column(df, *tokens):
     raise ValueError(f"Nenhuma coluna encontrada para: {tokens}")
 
 
+# Descobre nomes de colunas importantes mesmo que o CSV varie ligeiramente.
 date_col = "Data" if "Data" in df_hora.columns else _find_column(df_hora, "data")
 datetime_col = "Data/Hora" if "Data/Hora" in df_hora.columns else _find_column(df_hora, "data", "hora")
 
+# Identifica as principais tecnologias renovaveis usadas no perfil horario.
 eolica_col = _find_column(df_hora, "eolica")
 hidrica_col = _find_column(df_hora, "hidrica")
 fotovoltaica_col = _find_column(df_hora, "fotovoltaica")
 
+# Escolhe a coluna de preco medio diario, aceitando nomes em portugues ou ingles.
 if "avg_price_eur_mwh" in df_diarios.columns:
     price_col = "avg_price_eur_mwh"
 else:
@@ -53,6 +61,7 @@ else:
         price_col = _find_column(df_diarios, "price")
 
 
+# Normaliza as colunas temporais para datetime.
 df_hora["Data"] = pd.to_datetime(df_hora[date_col])
 df_hora["Data/Hora"] = pd.to_datetime(
     df_hora[datetime_col],
@@ -62,12 +71,14 @@ df_hora["Data/Hora"] = pd.to_datetime(
 
 df_diarios["Data"] = pd.to_datetime(df_diarios["Data"])
 
+# Cria a hora decimal para desenhar o perfil medio ao longo do dia.
 df_hora["Hora_decimal"] = (
     df_hora["Data/Hora"].dt.hour
     + df_hora["Data/Hora"].dt.minute / 60
 )
 
 
+# Mapa entre nomes apresentados e colunas reais de producao.
 PRODUCTION_COLS = {
     "Eólica": eolica_col,
     "Hídrica": hidrica_col,
@@ -75,6 +86,7 @@ PRODUCTION_COLS = {
 }
 
 
+# Textos usados para apresentar os tres grupos de preco.
 PRICE_CLUSTER_LABELS = {
     "baixos": "Preços mais baixos",
     "medios": "Preços médios",
@@ -82,6 +94,7 @@ PRICE_CLUSTER_LABELS = {
 }
 
 
+# Cores dos grupos de preco no calendario.
 PRICE_CLUSTER_COLORS = {
     "baixos": "#0F6B8A",
     "medios": "#C77D00",
@@ -89,6 +102,7 @@ PRICE_CLUSTER_COLORS = {
 }
 
 
+# Cores das linhas de producao no perfil horario.
 LINE_COLORS = {
     "Eólica": "#139A8F",
     "Hídrica": "#2F80ED",
@@ -96,6 +110,7 @@ LINE_COLORS = {
 }
 
 
+# Nomes dos meses usados nas anotacoes do calendario.
 MONTH_NAMES = [
     "janeiro", "fevereiro", "março", "abril",
     "maio", "junho", "julho", "agosto",
@@ -103,10 +118,12 @@ MONTH_NAMES = [
 ]
 
 
+# Abreviaturas dos dias da semana mostradas em cada bloco mensal.
 WEEKDAYS = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"]
 
 
 def _standardize(values):
+    # Padroniza os valores para media 0 e desvio padrao 1 antes do k-means.
     means = values.mean(axis=0)
     stds = values.std(axis=0)
     stds[stds == 0] = 1
@@ -115,21 +132,26 @@ def _standardize(values):
 
 
 def _kmeans(values, k=3, random_state=42, max_iter=100):
+    # Implementacao simples de k-means para separar os dias em 3 grupos de preco.
     if len(values) < k:
         raise ValueError("Não há dados suficientes para criar 3 grupos de preços.")
 
+    # Escolhe centroides iniciais de forma reprodutivel.
     rng = np.random.default_rng(random_state)
     centroids = values[rng.choice(len(values), size=k, replace=False)]
 
     for _ in range(max_iter):
+        # Calcula a distancia de cada dia a cada centroide.
         distances = np.linalg.norm(
             values[:, None, :] - centroids[None, :, :],
             axis=2
         )
 
+        # Atribui cada dia ao cluster mais proximo.
         labels = distances.argmin(axis=1)
         new_centroids = centroids.copy()
 
+        # Recalcula os centroides como a media dos pontos de cada cluster.
         for cluster in range(k):
             cluster_values = values[labels == cluster]
 
@@ -145,6 +167,7 @@ def _kmeans(values, k=3, random_state=42, max_iter=100):
 
 
 def _choose_default_year(daily_df):
+    # Escolhe por defeito o ano completo mais recente; se nao houver, usa o ultimo ano disponivel.
     years_by_months = daily_df.assign(
         Ano=daily_df["Data"].dt.year,
         Mes=daily_df["Data"].dt.month
@@ -159,6 +182,7 @@ def _choose_default_year(daily_df):
 
 
 def _prepare_price_cluster_data():
+    # Soma a producao horaria por dia para cada tecnologia renovavel.
     daily_prod = (
         df_hora
         .groupby("Data", as_index=False)[list(PRODUCTION_COLS.values())]
@@ -166,8 +190,10 @@ def _prepare_price_cluster_data():
         .sort_values("Data")
     )
 
+    # Seleciona apenas data e preco medio diario.
     daily_prices = df_diarios[["Data", price_col]].copy()
 
+    # Junta producao diaria com preco diario.
     daily_data = pd.merge(
         daily_prod,
         daily_prices,
@@ -177,8 +203,10 @@ def _prepare_price_cluster_data():
 
     daily_data = daily_data.dropna(subset=[price_col]).copy()
 
+    # Usa apenas o preco como variavel de entrada para o clustering.
     price_values = daily_data[[price_col]].to_numpy(dtype=float)
 
+    # Cria 3 clusters: dias de preco baixo, medio e alto.
     labels = _kmeans(
         _standardize(price_values),
         k=3
@@ -186,6 +214,7 @@ def _prepare_price_cluster_data():
 
     daily_data["Price_cluster_raw"] = labels
 
+    # Ordena clusters pela media de preco para dar nomes interpretaveis.
     cluster_order = (
         daily_data
         .groupby("Price_cluster_raw")[price_col]
@@ -201,6 +230,7 @@ def _prepare_price_cluster_data():
         cluster_order[2]: "altos"
     }
 
+    # Adiciona ao dataframe o nome tecnico e o label legivel de cada cluster.
     daily_data["Price_cluster"] = daily_data["Price_cluster_raw"].map(cluster_map)
 
     daily_data["Price_cluster_label"] = daily_data["Price_cluster"].map(
@@ -211,6 +241,7 @@ def _prepare_price_cluster_data():
 
 
 def _calendar_positions(calendar_df):
+    # Calcula a posicao de cada dia num calendario anual organizado em 4 linhas x 3 meses.
     first_days = pd.to_datetime({
         "year": calendar_df["Data"].dt.year,
         "month": calendar_df["Data"].dt.month,
@@ -232,12 +263,14 @@ def _calendar_positions(calendar_df):
 
     calendar_df = calendar_df.copy()
 
+    # Coordenada horizontal: mes dentro da linha + semana dentro do mes.
     calendar_df["calendar_x"] = (
         left_pad
         + month_col * month_width
         + week_of_month
     )
 
+    # Coordenada vertical: linha do mes + dia da semana.
     calendar_df["calendar_y"] = (
         -month_row * month_height
         - calendar_df["Data"].dt.weekday
@@ -249,6 +282,7 @@ def _calendar_positions(calendar_df):
 
 
 def _add_calendar_annotations(fig, month_width, month_height, left_pad):
+    # Escreve os nomes dos meses no calendario.
     for month_idx, month_name in enumerate(MONTH_NAMES, start=1):
         col = (month_idx - 1) % 3
         row = (month_idx - 1) // 3
@@ -264,6 +298,7 @@ def _add_calendar_annotations(fig, month_width, month_height, left_pad):
             xanchor="center"
         )
 
+    # Escreve os dias da semana no lado esquerdo de cada linha de meses.
     for row in range(4):
         for weekday_idx, weekday in enumerate(WEEKDAYS):
             fig.add_annotation(
@@ -279,6 +314,7 @@ def _add_calendar_annotations(fig, month_width, month_height, left_pad):
 
 
 def _normalize_price_cluster(price_cluster):
+    # Permite receber o cluster como numero ou texto e converte para a chave interna.
     if isinstance(price_cluster, int):
         cluster_map = {
             1: "baixos",
@@ -295,6 +331,7 @@ def _normalize_price_cluster(price_cluster):
 
     price_cluster = _normalize(price_cluster)
 
+    # Aceita varias formas de escrever a mesma escolha.
     aliases = {
         "baixo": "baixos",
         "baixos": "baixos",
@@ -321,13 +358,17 @@ def _normalize_price_cluster(price_cluster):
 
 
 def create_cluster_calendar_visualization(price_cluster="baixos", year=None):
+    # Normaliza a escolha do utilizador para "baixos", "medios" ou "altos".
     price_cluster = _normalize_price_cluster(price_cluster)
 
+    # Prepara os dados diarios ja classificados por grupos de preco.
     daily_data = _prepare_price_cluster_data()
 
+    # Se o utilizador nao indicar ano, escolhe automaticamente um ano adequado.
     if year is None:
         year = _choose_default_year(daily_data)
 
+    # Filtra o calendario para o ano pretendido.
     calendar_df = daily_data[daily_data["Data"].dt.year == year].copy()
 
     if calendar_df.empty:
@@ -335,8 +376,10 @@ def create_cluster_calendar_visualization(price_cluster="baixos", year=None):
 
     calendar_df, month_width, month_height, left_pad = _calendar_positions(calendar_df)
 
+    # Texto da data usado nos tooltips.
     calendar_df["Data_hover"] = calendar_df["Data"].dt.strftime("%Y-%m-%d")
 
+    # Seleciona apenas os dias pertencentes ao grupo de preco escolhido.
     selected_days = calendar_df[
         calendar_df["Price_cluster"] == price_cluster
     ].copy()
@@ -350,6 +393,7 @@ def create_cluster_calendar_visualization(price_cluster="baixos", year=None):
 
     selected_label = PRICE_CLUSTER_LABELS[price_cluster]
 
+    # Cria uma figura com dois paineis: calendario e perfil horario medio.
     fig = make_subplots(
         rows=1,
         cols=2,
@@ -361,6 +405,7 @@ def create_cluster_calendar_visualization(price_cluster="baixos", year=None):
         )
     )
 
+    # Desenha todos os dias do ano como fundo neutro do calendario.
     fig.add_trace(go.Scatter(
         x=calendar_df["calendar_x"],
         y=calendar_df["calendar_y"],
@@ -382,6 +427,7 @@ def create_cluster_calendar_visualization(price_cluster="baixos", year=None):
         showlegend=False
     ), row=1, col=1)
 
+    # Sobrepoe os dias que pertencem ao cluster escolhido, com cor forte.
     fig.add_trace(go.Scatter(
         x=selected_days["calendar_x"],
         y=selected_days["calendar_y"],
@@ -405,12 +451,14 @@ def create_cluster_calendar_visualization(price_cluster="baixos", year=None):
         showlegend=False
     ), row=1, col=1)
 
+    # Usa as datas selecionadas para calcular o perfil horario medio de producao.
     selected_dates = set(selected_days["Data"])
 
     selected_hourly = df_hora[
         df_hora["Data"].isin(selected_dates)
     ].copy()
 
+    # Media da producao por hora decimal nos dias selecionados.
     profile = (
         selected_hourly
         .groupby("Hora_decimal", as_index=False)[list(PRODUCTION_COLS.values())]
@@ -418,6 +466,7 @@ def create_cluster_calendar_visualization(price_cluster="baixos", year=None):
         .sort_values("Hora_decimal")
     )
 
+    # Adiciona uma linha para cada tecnologia renovavel no painel direito.
     for label, col in PRODUCTION_COLS.items():
         fig.add_trace(go.Scatter(
             x=profile["Hora_decimal"],
@@ -436,8 +485,10 @@ def create_cluster_calendar_visualization(price_cluster="baixos", year=None):
             )
         ), row=1, col=2)
 
+    # Adiciona nomes dos meses e dias da semana ao calendario.
     _add_calendar_annotations(fig, month_width, month_height, left_pad)
 
+    # Configura layout geral da figura.
     fig.update_layout(
         template="plotly_white",
         width=1450,
@@ -446,6 +497,7 @@ def create_cluster_calendar_visualization(price_cluster="baixos", year=None):
         margin=dict(l=50, r=60, t=70, b=60)
     )
 
+    # Remove grelhas e labels do painel do calendario, porque as anotacoes ja identificam tudo.
     fig.update_xaxes(
         showgrid=False,
         showticklabels=False,
@@ -464,6 +516,7 @@ def create_cluster_calendar_visualization(price_cluster="baixos", year=None):
         col=1
     )
 
+    # Configura o eixo X do perfil horario.
     fig.update_xaxes(
         title="Hora do dia",
         tickmode="array",
@@ -479,6 +532,7 @@ def create_cluster_calendar_visualization(price_cluster="baixos", year=None):
         col=2
     )
 
+    # Configura o eixo Y do perfil horario.
     fig.update_yaxes(
         title="Produção média (kWh)",
         showgrid=True,
@@ -491,5 +545,6 @@ def create_cluster_calendar_visualization(price_cluster="baixos", year=None):
 
 
 if __name__ == "__main__":
+    # Teste local: mostra o calendario dos dias com precos altos em 2024.
     fig = create_cluster_calendar_visualization(price_cluster="altos", year=2024)
     fig.show()

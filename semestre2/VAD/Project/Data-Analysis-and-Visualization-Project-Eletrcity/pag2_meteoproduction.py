@@ -6,21 +6,26 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 
+# Carrega dados diarios de meteorologia/preco e dados horarios de producao.
 df_diarios = pd.read_csv("data/dados_diarios.csv")
 df_hora = pd.read_csv("data/dados_hora.csv")
 
+# Converte datas para datetime para permitir ordenar, agrupar e juntar datasets.
 df_diarios["Data"] = pd.to_datetime(df_diarios["Data"])
 df_hora["Data"] = pd.to_datetime(df_hora["Data"])
 
+# Ordena cronologicamente para as linhas dos graficos aparecerem na sequencia correta.
 df_diarios = df_diarios.sort_values("Data")
 df_hora = df_hora.sort_values("Data")
 
+# Transforma a producao horaria em producao diaria, somando todas as horas do dia.
 prod_diaria = (
     df_hora
     .groupby("Data", as_index=False)
     .sum(numeric_only=True)
 )
 
+# Junta producao diaria e meteorologia para comparar as variaveis no mesmo grafico.
 df_prod_meteo = pd.merge(
     prod_diaria,
     df_diarios,
@@ -68,6 +73,7 @@ LINE_OPACITY = 0.65
 
 
 def _normalize(text):
+    # Remove acentos e uniformiza o texto para procurar colunas de forma robusta.
     normalized = unicodedata.normalize("NFKD", str(text))
     return "".join(
         char for char in normalized
@@ -76,6 +82,7 @@ def _normalize(text):
 
 
 def _find_column(df, *tokens):
+    # Devolve a coluna cujo nome contem todos os tokens indicados.
     normalized_tokens = [_normalize(token) for token in tokens]
 
     for col in df.columns:
@@ -88,6 +95,7 @@ def _find_column(df, *tokens):
 
 
 def _build_production_options():
+    # Define as opcoes de producao disponiveis no dropdown e os tokens usados para as encontrar.
     configs = [
         ("total", "Produção total", ("rede", "distribuicao")),
         ("eolica", "Eólica", ("eolica",)),
@@ -98,6 +106,7 @@ def _build_production_options():
 
     options = {}
 
+    # Guarda tanto a chave simples como o nome real da coluna para aceitar os dois formatos.
     for key, label, tokens in configs:
         col = _find_column(df_prod_meteo, *tokens)
 
@@ -112,6 +121,7 @@ producao_cols = _build_production_options()
 
 
 def _build_production_color_options():
+    # Associa cada tecnologia de producao a uma cor consistente no grafico.
     colors = {}
 
     for key, (_, col) in producao_cols.items():
@@ -125,6 +135,7 @@ def _build_production_color_options():
 producao_cores = _build_production_color_options()
 
 
+# Mapeia as opcoes meteorologicas para o nome apresentado e a coluna no dataset.
 meteo_cols = {
     "temperatura": ("Temperatura média", "temp_C_mean"),
     "vento": ("Velocidade do vento", "wind_speed_mean"),
@@ -141,6 +152,7 @@ meteo_cols = {
 
 
 def _hex_to_rgb(color):
+    # Converte uma cor hexadecimal para valores RGB.
     color = color.lstrip("#")
     return tuple(
         int(color[index:index + 2], 16)
@@ -149,6 +161,7 @@ def _hex_to_rgb(color):
 
 
 def _rgb_distance_squared(color_a, color_b):
+    # Mede a distancia entre duas cores para perceber se sao visualmente parecidas.
     rgb_a = _hex_to_rgb(color_a)
     rgb_b = _hex_to_rgb(color_b)
 
@@ -159,6 +172,7 @@ def _rgb_distance_squared(color_a, color_b):
 
 
 def _hex_to_hls(color):
+    # Converte RGB para HLS para comparar a matiz das cores.
     red, green, blue = _hex_to_rgb(color)
 
     return colorsys.rgb_to_hls(
@@ -169,6 +183,7 @@ def _hex_to_hls(color):
 
 
 def _hue_distance(color_a, color_b):
+    # Calcula a distancia circular entre as matizes de duas cores.
     hue_a, _, saturation_a = _hex_to_hls(color_a)
     hue_b, _, saturation_b = _hex_to_hls(color_b)
 
@@ -180,6 +195,7 @@ def _hue_distance(color_a, color_b):
 
 
 def _colors_are_too_close(color_a, color_b):
+    # Verifica se duas cores podem ficar confundiveis no grafico.
     return (
         _hue_distance(color_a, color_b) <= SIMILAR_HUE_DISTANCE
         or _rgb_distance_squared(color_a, color_b) <= MIN_RGB_DISTANCE_SQUARED
@@ -187,6 +203,7 @@ def _colors_are_too_close(color_a, color_b):
 
 
 def _get_meteo_color(meteo, prod_color):
+    # Escolhe uma cor meteorologica que contraste com a cor da producao selecionada.
     base_color = METEO_COLORS.get(meteo, DEFAULT_METEO_COLOR)
 
     if not _colors_are_too_close(prod_color, base_color):
@@ -205,6 +222,7 @@ def _get_meteo_color(meteo, prod_color):
 
 
 def beautify_figure(fig, title, yaxis_title):
+    # Aplica um layout comum aos graficos de linhas para manter consistencia visual.
     fig.update_layout(
         title=title,
         template="plotly_white",
@@ -229,6 +247,7 @@ def beautify_figure(fig, title, yaxis_title):
 
 
 def plot_sunlight(df):
+    # Cria um grafico simples para a evolucao dos minutos de luz solar.
     fig = px.line(
         df,
         x=df.index,
@@ -265,16 +284,19 @@ def plot_sunlight(df):
 
 
 def create_meteovsprod(meteo: str, tec: str):
+    # Valida se a variavel meteorologica recebida existe nas opcoes aceites.
     if meteo not in meteo_cols:
         raise ValueError(
             f"Valor meteorológico incorreto. Deve ser um de {list(meteo_cols)}"
         )
 
+    # Valida se a tecnologia de producao recebida existe nas opcoes aceites.
     if tec not in producao_cols:
         raise ValueError(
             f"Tecnologia incorreta. Deve ser uma de {list(producao_cols)}"
         )
 
+    # Obtem labels, colunas e cores de acordo com as escolhas do utilizador.
     meteo_label, meteo_col = meteo_cols[meteo]
     prod_label, prod_col = producao_cols[tec]
     prod_color = producao_cores.get(tec, DEFAULT_PRODUCTION_COLOR)
@@ -282,7 +304,7 @@ def create_meteovsprod(meteo: str, tec: str):
 
     fig = go.Figure()
 
-    # Linha da produção: muda de cor consoante a tecnologia escolhida
+    # Linha da producao: usa o eixo Y da esquerda.
     fig.add_trace(go.Scatter(
         x=df_prod_meteo["Data"],
         y=df_prod_meteo[prod_col],
@@ -296,7 +318,7 @@ def create_meteovsprod(meteo: str, tec: str):
         )
     ))
 
-    # Linha meteorológica: muda de cor consoante o fator escolhido
+    # Linha meteorologica: usa o eixo Y da direita porque tem outra unidade.
     fig.add_trace(go.Scatter(
         x=df_prod_meteo["Data"],
         y=df_prod_meteo[meteo_col],
@@ -310,6 +332,7 @@ def create_meteovsprod(meteo: str, tec: str):
         )
     ))
 
+    # Configura o grafico com dois eixos Y, range slider e legenda horizontal.
     fig.update_layout(
         template="plotly_white",
         width=None,
@@ -345,5 +368,6 @@ def create_meteovsprod(meteo: str, tec: str):
 
 
 if __name__ == "__main__":
+    # Teste local com vento vs producao eolica.
     fig = create_meteovsprod("vento", "eolica")
     fig.show()
